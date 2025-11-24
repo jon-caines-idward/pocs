@@ -65,8 +65,11 @@
       }
       cohorts.forEach(cohortId => {
         fbq('trackCustom', 'AudienceLiftEntry', { audience_signal: cohortId });
-        console.log('Sent custom event to pixel with params: ' + anonId + ', ' + cohortId);
-        // WHere CAPI is implemented also POST to our Node server 
+        console.log('Sent non core custom event to pixel with params: ' + anonId + ', ' + cohortId);
+        fbq('trackCustom', 'AudienceLiftEntry_' + cohortId );
+        console.log('Sent core custom event to pixel with params: ' + anonId + ', ' + cohortId);
+        
+        // Where CAPI is implemented also POST to our Node server 
         return fetch('https://audiencelift.onrender.com:3000/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
