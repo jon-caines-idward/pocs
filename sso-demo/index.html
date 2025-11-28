@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SSO Demo</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+(async function(){
+  // SHA-256 hashing function
+  async function sha256(message) {
+    const msgBuffer = new TextEncoder().encode(message);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2,'0')).join('');
+  }
+
+  // Hybrid LS + Data Layer handler
+  async function handleSSOId(rawId, provider) {
+    const hashedId = await sha256(rawId);
+
+    // Store in localStorage
+    localStorage.setItem('anon_sso_id', hashedId);
+
+    // Push to dataLayer
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      event: 'anonSSOIdentified',
+      anon_sso_id: hashedId,
+      auth_source: provider
+    });
+
+    // Display on page for demo purposes
+    document.getElementById('hashedIdDisplay').textContent = hashedId;
+    console.log('Hashed ID pushed to dataLayer:', hashedId);
+  }
+
+  // Google Sign-In callback
+  window.handleGoogleLogin = async function(response) {
+    const payload = JSON.parse(atob(response.credential.split('.')[1]));
+    const googleSub = payload.sub;
+    await handleSSOId(googleSub, 'google');
+  };
+})();
+</script>
+</head>
+<body>
+<h1>SSO Demo using Google SSO</h1>
+<p>Click the button below to sign in with Google. The hashed SSO ID will appear below and be pushed to the Data Layer.</p>
+
+<div id="g_id_onload"
+     data-client_id="1049259937255-d6u2p12ba00rgfg7bpbuvfru4i74i9bu.apps.googleusercontent.com"
+     data-callback="handleGoogleLogin">
+</div>
+<div id="g_id_signin"></div>
+
+<h2>Hashed ID:</h2>
+<pre id="hashedIdDisplay">Not signed in yet</pre>
+
+<h2>Data Layer:</h2>
+<pre id="dataLayerDisplay">Check console for Data Layer logs</pre>
+
+<script>
+  // Optional: show dataLayer updates in real time
+  const originalPush = window.dataLayer?.push.bind(window.dataLayer);
+  if(originalPush){
+    window.dataLayer.push = function(...args){
+      originalPush(...args);
+      document.getElementById('dataLayerDisplay').textContent = JSON.stringify(window.dataLayer, null, 2);
+      return args.length;
+    };
+  }
+</script>
+</body>
+</html>
