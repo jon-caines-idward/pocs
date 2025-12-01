@@ -37,6 +37,7 @@
 
   // Google Sign-In callback
   window.handleGoogleLogin = async function(response) {
+    console.log(response);
     const payload = JSON.parse(atob(response.credential.split('.')[1]));
     const googleSub = payload.sub;
     await handleSSOId(googleSub, 'google');
