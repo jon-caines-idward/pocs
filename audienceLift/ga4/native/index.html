@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>GA4 AudienceLift - GA4</title>
+  <title>GA4 AudienceLift - gtag</title>
   <link rel="stylesheet" href="styles.css">
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-P38QHLDQGM"></script>
@@ -15,6 +15,9 @@
 </script>
 </head>
 <body>
-  <h1>Sending AudienceLift Signals to GA4 using Native</h1>
+  <h1>Sending AudienceLift Signals to GA4 using gtag</h1>
+  ​<a href="#" name="button1" onclick="gtag('event', 'AudienceLiftEntry', {
+    'audience_signal': '12345'
+  }); console.log('AudienceLiftEntry sent via gtag');">Send Signal to GA4 via gtag</a>
 </body>
 </html>
