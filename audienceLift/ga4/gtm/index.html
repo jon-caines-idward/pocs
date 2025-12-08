@@ -1,16 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>GA4 AudienceLift - GTM</title>
-  <link rel="stylesheet" href="styles.css">
+  <!-- Google Tag Manager -->
+  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+  })(window,document,'script','dataLayer','GTM-WBKWRT72');</script>
+  <!-- End Google Tag Manager -->
 </head>
-
 <body>
+  <!-- Google Tag Manager (noscript) -->
+  <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-WBKWRT72"
+  height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+  <!-- End Google Tag Manager (noscript) -->
   <h1>Sending AudienceLift Signals to GA4 using GTM</h1>
-  <script src="scripts.js"></script>
+  <a href="#" name="button1" onclick="window.dataLayer = window.dataLayer || []; window.dataLayer.push({
+    event: 'AudienceLiftEntry',
+    audience_signal: '12345'
+  }); console.log('AudienceLiftEntry sent via GTM');">Send Signal to GA4 via GTM</a>
 </body>
-
 </html>
