@@ -18,9 +18,15 @@
   height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <!-- End Google Tag Manager (noscript) -->
   <h1>Sending AudienceLift Signals to GA4 using GTM</h1>
+  <input 
+    id="audSig"
+    type="text"
+    value="12345"
+    placeholder="Enter audience signal"
+  />
   <a href="#" name="button1" onclick="window.dataLayer = window.dataLayer || []; window.dataLayer.push({
     event: 'AudienceLiftEntry',
-    audience_signal: '12345'
+    audience_signal: document.getElementById('audSig').value
   }); console.log('AudienceLiftEntry sent via GTM');">Send Signal to GA4 via GTM</a>
 </body>
 </html>
