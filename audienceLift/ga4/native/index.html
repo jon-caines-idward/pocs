@@ -15,8 +15,14 @@
 </head>
 <body>
   <h1>Sending AudienceLift Signals to GA4 using gtag</h1>
+  <input 
+    id="audSig"
+    type="text"
+    value="12345"
+    placeholder="Enter audience signal"
+  />
   ​<a href="#" name="button1" onclick="gtag('event', 'AudienceLiftEntry', {
-    'audience_signal': '12345'
+    'audience_signal': document.getElementById('audSig').value
   }); console.log('AudienceLiftEntry sent via gtag');">Send Signal to GA4 via gtag</a>
 </body>
 </html>
