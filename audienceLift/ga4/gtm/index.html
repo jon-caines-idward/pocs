@@ -24,9 +24,27 @@
     value="12345"
     placeholder="Enter audience signal"
   />
-  <a href="#" name="button1" onclick="window.dataLayer = window.dataLayer || []; window.dataLayer.push({
-    event: 'AudienceLiftEntry',
-    audience_signal: document.getElementById('audSig').value
-  }); console.log('AudienceLiftEntry sent via GTM');">Send Signal to GA4 via GTM</a>
+  <a href="#" name="button1" onclick="
+  window.dataLayer = window.dataLayer || [];
+
+  var audSigEl = document.getElementById('audSig');
+  var audSig = audSigEl ? audSigEl.value : '';
+
+  var storedCohorts = localStorage.getItem('cohort_ids') || '';
+  var cohortList = storedCohorts
+    .split(',')
+    .map(c => c.trim())
+    .filter(c => c.length > 0);
+
+  var pushObj = { event: 'AudienceLiftEntry', audience_signal: audSig };
+
+  if (cohortList.length > 0) {
+    pushObj.active_anonymised_cohorts = cohortList.join(',');
+  }
+
+  window.dataLayer.push(pushObj);
+
+  console.log('AudienceLiftEntry sent via GTM with cohorts:', audSig, ' ', pushObj.active_anonymised_cohorts || '(none)');
+">Send Signal to GA4 via GTM</a>
 </body>
 </html>
