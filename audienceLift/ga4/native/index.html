@@ -21,8 +21,30 @@
     value="12345"
     placeholder="Enter audience signal"
   />
-  ​<a href="#" name="button1" onclick="gtag('event', 'AudienceLiftEntry', {
-    'audience_signal': document.getElementById('audSig').value
-  }); console.log('AudienceLiftEntry sent via gtag');">Send Signal to GA4 via gtag</a>
+  ​<a href="#" name="button1" onclick="
+  var audSigEl = document.getElementById('audSig');
+  var audSig = audSigEl ? audSigEl.value : '';
+
+  // Event-scoped cohort parameter
+  if(audSig) {
+    gtag('event', 'AudienceLiftEntry', { 'audience_signal': audSig });
+    console.log('AudienceLiftEntry cohort sent, event scoped, via gtag: ', audSig);
+  }
+
+  // User property: all active cohorts
+  (function() {
+    var storedCohorts = localStorage.getItem('cohort_ids');
+    if(!storedCohorts) return;
+
+    var cohortList = storedCohorts
+      .split(',')
+      .map(c => c.trim())
+      .filter(c => c.length > 0);
+    if(cohortList.length === 0) return;
+
+    gtag('set', 'user_properties', { anonymised_audiences: cohortList.join(',') });
+    console.log('Cohorts send, usr scoped, via gtag: ', cohortList);
+  })();
+">Send Signals to GA4 via gtag</a>
 </body>
 </html>
