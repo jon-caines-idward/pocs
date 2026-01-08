@@ -39,12 +39,12 @@
   var pushObj = { event: 'AudienceLiftEntry', audience_signal: audSig };
 
   if (cohortList.length > 0) {
-    pushObj.active_anonymised_cohorts = cohortList.join(',');
+    pushObj.anonymised_audiences = cohortList.join(',');
   }
 
   window.dataLayer.push(pushObj);
 
-  console.log('AudienceLiftEntry sent via GTM with cohorts:', audSig, ' ', pushObj.active_anonymised_cohorts || '(none)');
+  console.log('AudienceLiftEntry sent via GTM with cohorts:', audSig, ' ', pushObj.anonymised_audiences || '(none)');
 ">Send Signal to GA4 via GTM</a>
 </body>
 </html>
