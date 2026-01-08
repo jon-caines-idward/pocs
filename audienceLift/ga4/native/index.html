@@ -25,7 +25,7 @@
   var audSigEl = document.getElementById('audSig');
   var audSig = audSigEl ? audSigEl.value : '';
 
-  // User property: all active cohorts - has to be set before event call - but this has implications - it means and event call need to occur //
+  // User property: all active cohorts - has to be set before event call - but this has implications - it means an event call need to occur //
   (function() {
     var storedCohorts = localStorage.getItem('cohort_ids');
     if(!storedCohorts) return;
