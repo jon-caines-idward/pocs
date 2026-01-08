@@ -25,13 +25,7 @@
   var audSigEl = document.getElementById('audSig');
   var audSig = audSigEl ? audSigEl.value : '';
 
-  // Event-scoped cohort parameter
-  if(audSig) {
-    gtag('event', 'AudienceLiftEntry', { 'audience_signal': audSig });
-    console.log('AudienceLiftEntry cohort sent, event scoped, via gtag: ', audSig);
-  }
-
-  // User property: all active cohorts
+  // User property: all active cohorts - has to be set before event call - but this has implications - it means and event call need to occur //
   (function() {
     var storedCohorts = localStorage.getItem('cohort_ids');
     if(!storedCohorts) return;
@@ -43,8 +37,14 @@
     if(cohortList.length === 0) return;
 
     gtag('set', 'user_properties', { anonymised_audiences: cohortList.join(',') });
-    console.log('Cohorts send, user scoped, via gtag: ', cohortList);
+    console.log('Cohorts set, user scoped, via gtag: ', cohortList);
   })();
+
+  // Event-scoped cohort parameter
+  if(audSig) {
+    gtag('event', 'AudienceLiftEntry', { 'audience_signal': audSig });
+    console.log('AudienceLiftEntry cohort sent, event scoped, via gtag: ', audSig, ' and cohorts send as user scoped param);
+  }
 ">Send Signals to GA4 via gtag</a>
 </body>
 </html>
