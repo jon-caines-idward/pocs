@@ -11,6 +11,26 @@
   'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
   })(window,document,'script','dataLayer','GTM-WBKWRT72');</script>
   <!-- End Google Tag Manager -->
+  <script>
+  window.addEventListener('DOMContentLoaded', function() {
+  window.dataLayer = window.dataLayer || [];
+
+  const storedCohorts = localStorage.getItem('cohort_ids') || '';
+  const cohortList = storedCohorts
+    .split(',')
+    .map(c => c.trim())
+    .filter(c => c.length > 0);
+
+  if (cohortList.length > 0) {
+    window.dataLayer.push({
+      event: 'CohortDataAvailable',
+      anonymised_audiences: cohortList
+    });
+
+    console.log('Cohort data sent via GTM:', cohortList);
+  }
+});
+</script>
 </head>
 <body>
   <!-- Google Tag Manager (noscript) -->
@@ -29,22 +49,11 @@
 
   var audSigEl = document.getElementById('audSig');
   var audSig = audSigEl ? audSigEl.value : '';
-
-  var storedCohorts = localStorage.getItem('cohort_ids') || '';
-  var cohortList = storedCohorts
-    .split(',')
-    .map(c => c.trim())
-    .filter(c => c.length > 0);
-
   var pushObj = { event: 'AudienceLiftEntry', audience_signal: audSig };
-
-  if (cohortList.length > 0) {
-    pushObj.anonymised_audiences = cohortList.join(',');
-  }
 
   window.dataLayer.push(pushObj);
 
-  console.log('AudienceLiftEntry sent via GTM with cohorts:', audSig, ' ', pushObj.anonymised_audiences || '(none)');
+  console.log('AudienceLiftEntry sent via GTM with cohorts:', audSig);
 ">Send Signal to GA4 via GTM</a>
 </body>
 </html>
