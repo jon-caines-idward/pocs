@@ -12,6 +12,7 @@
   })(window,document,'script','dataLayer','GTM-WBKWRT72');</script>
   <!-- End Google Tag Manager -->
   <script>
+  // this runs on a page reload but in reality this will run when the audiences change for the user
   window.addEventListener('DOMContentLoaded', function() {
   window.dataLayer = window.dataLayer || [];
 
@@ -23,7 +24,7 @@
 
   if (cohortList.length > 0) {
     window.dataLayer.push({
-      event: 'AnonymisedCohortDataAvailable',
+      event: 'AnonymisedAudienceChange',
       anonymised_audiences: cohortList
     });
 
