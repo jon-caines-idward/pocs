@@ -34,7 +34,7 @@
     if (normalised === lastSent) return;
 
     // With gtag, user properties can be set but only sent with an event
-    gtag('set', 'user_properties', { 'anonymised_audiences': normalised }; 
+    gtag('set', 'user_properties', { 'anonymised_audiences': normalised }); 
     gtag('event', 'AnonymisedCohortChange');
 
     localStorage.setItem(LAST_SENT_KEY, normalised);
