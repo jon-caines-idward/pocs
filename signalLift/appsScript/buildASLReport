@@ -1,0 +1,320 @@
+/**
+ * Anonymised Signal Uplift Methodology Reference Table:
+ *
+ * TG = Treatment Group (PPID Status = Active)
+ * CG = Control Group (PPID Status = Missing AND CD0 = 8)
+ * CD0 = Custom Dimension 0 (AnonymisedSignalLift) - used to identify control group
+ *
+ * Channel Metrics:
+ *  - ADX / AD Server Revenue: Revenue from GAM per channel
+ *  - Ad Requests: Number of ad requests associated with each group
+ *
+ * Step-by-step Methodology:
+ * 1. Identify TG (Active PPID) and CG (Missing PPID with CD0=8) for each channel
+ * 2. Aggregate total revenue and ad requests per group by date
+ * 3. Calculate eCPM per group:
+ *      eCPM = Revenue / Ad Requests * 1000
+ * 4. Calculate eCPM difference:
+ *      eCPM_diff = TG eCPM - CG eCPM
+ * 5. Calculate Revenue Uplift:
+ *      Revenue Uplift = eCPM_diff * TG Ad Requests / 1000
+ *
+ * Additional Metrics:
+ *  - Unfilled Impressions = Ad Requests - Impressions
+ *  - eCPM % Uplift = eCPM_diff / CG eCPM
+ *
+ * Notes:
+ *  - ADX = Ad Exchange
+ *  - ADS = Ad Server
+ *  - Calculations are done per date to align with GAM reporting granularity
+ *  - Chunking is used for performance and large datasets
+ */
+
+function buildASLReport() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sourceSheet = ss.getSheets()[0]; // raw tab, untouched
+  const outputName = 'Anonymised Signal Lift Working';
+
+  let outputSheet = ss.getSheetByName(outputName);
+  if (!outputSheet) {
+    outputSheet = ss.insertSheet(outputName);
+  } else {
+    outputSheet.clearContents();
+  }
+
+  // Step 1: Read header row to dynamically map column indices
+  const header = sourceSheet
+    .getRange(1, 1, 1, sourceSheet.getLastColumn())
+    .getValues()[0];
+
+  const safeColIndex = (name) => {
+    const idx = header.indexOf(name);
+    return idx === -1 ? null : idx;
+  };
+
+  // Map relevant columns from GAM export
+  const DATE_COL           = safeColIndex('Date');
+  const CD0_COL            = safeColIndex('Anonymised Signal Lift assigned (anonymisedsignallift)');
+  const PPID_STATUS_COL    = safeColIndex('PPID Status'); // Used to distinguish TG (Active) vs CG (Missing)
+  const DEMAND_CHANNEL_COL = safeColIndex('Demand channel');
+  const IMPRESSIONS_COL    = safeColIndex('Total impressions');
+  const ADX_REV_COL        = safeColIndex('Ad Exchange revenue'); 
+  const ADS_REV_COL        = safeColIndex('Ad server total revenue'); 
+  const AD_REQUESTS_COL    = safeColIndex('Total ad requests'); 
+  const ADX_REQ_COL        = safeColIndex('Ad Exchange total requests'); 
+
+  // Required for logic
+  if (DATE_COL === null || PPID_STATUS_COL === null || DEMAND_CHANNEL_COL === null) {
+    outputSheet.getRange(1, 1).setValue(
+      'Missing one of required columns: Date, PPID Status, Demand channel'
+    );
+    return;
+  }
+
+  // Set limits
+  const lastRow = sourceSheet.getLastRow();
+  const lastCol = sourceSheet.getLastColumn();
+  const CHUNK_SIZE = 2000;
+
+  // Step 2: Create maps for TG and CG by channel
+  const activeAdxByDate  = {}; // TG AdX
+  const missingAdxByDate = {}; // CG AdX
+  const activeAdsByDate  = {}; // TG Ad Server
+  const missingAdsByDate = {}; // CG Ad Server
+
+  // Date Helper
+  function ensureDateKey(value) {
+    if (value instanceof Date) {
+      return Utilities.formatDate(value, Session.getScriptTimeZone(), 'yyyy-MM-dd');
+    }
+    return String(value);
+  }
+
+  // Helper to accumulate impressions, revenue, ad requests per date
+  function addToMap(map, dateKey, impressions, revenue, adRequests) {
+    if (!map[dateKey]) {
+      map[dateKey] = { impressions: 0, revenue: 0, adRequests: 0 };
+    }
+    map[dateKey].impressions += Number(impressions) || 0;
+    map[dateKey].revenue += Number(revenue) || 0;
+    map[dateKey].adRequests += Number(adRequests) || 0;
+  }
+
+  // Datamap Helper
+  function mergeMaps(target, source) {
+    Object.keys(source).forEach(dateKey => {
+      addToMap(
+        target,
+        dateKey,
+        source[dateKey].impressions,
+        source[dateKey].revenue,
+        source[dateKey].adRequests
+      );
+    });
+  }
+
+  // IO Helper
+  function flushOutput() {
+    const allDateKeys = new Set([
+      ...Object.keys(activeAdxByDate),
+      ...Object.keys(missingAdxByDate),
+      ...Object.keys(activeAdsByDate),
+      ...Object.keys(missingAdsByDate),
+    ]);
+
+    // Calculate data columns
+    const resultRows = [];
+    allDateKeys.forEach(dateKey => {
+      const activeAdx  = activeAdxByDate[dateKey]  || { impressions: 0, revenue: 0, adRequests: 0 };
+      const missingAdx = missingAdxByDate[dateKey] || { impressions: 0, revenue: 0, adRequests: 0 };
+      const activeAds  = activeAdsByDate[dateKey]  || { impressions: 0, revenue: 0, adRequests: 0 };
+      const missingAds = missingAdsByDate[dateKey] || { impressions: 0, revenue: 0, adRequests: 0 };
+
+      const dateObj = new Date(dateKey);
+
+      const activeAdxEcpm = activeAdx.adRequests > 0 ? (activeAdx.revenue / activeAdx.adRequests * 1000) : 0;
+      const missingAdxEcpm = missingAdx.adRequests > 0 ? (missingAdx.revenue / missingAdx.adRequests * 1000) : 0;
+      const activeAdsEcpm = activeAds.adRequests > 0 ? (activeAds.revenue / activeAds.adRequests * 1000) : 0;
+      const missingAdsEcpm = missingAds.adRequests > 0 ? (missingAds.revenue / missingAds.adRequests * 1000) : 0;
+
+      const adxEcpmUplift = activeAdxEcpm - missingAdxEcpm;
+      const adxEcpmPercentUplift = missingAdxEcpm !== 0 ? (adxEcpmUplift / missingAdxEcpm) : 0;
+      const adxRevenueUplift = (activeAdx.adRequests * adxEcpmUplift) / 1000;
+
+      const adsEcpmUplift = activeAdsEcpm - missingAdsEcpm;
+      const adsEcpmPercentUplift = missingAdsEcpm !== 0 ? (adsEcpmUplift / missingAdsEcpm) : 0;
+      const adsRevenueUplift = (activeAds.adRequests * adsEcpmUplift) / 1000;
+
+      resultRows.push([
+        dateObj,
+        activeAdx.impressions,
+        activeAdx.revenue,
+        activeAdx.adRequests,
+        activeAdx.adRequests - activeAdx.impressions, // extra metric: unfilled
+        activeAdxEcpm,
+        missingAdx.impressions,
+        missingAdx.revenue,
+        missingAdx.adRequests,
+        missingAdx.adRequests - missingAdx.impressions, // extra metric
+        missingAdxEcpm,
+        adxEcpmUplift,
+        adxEcpmPercentUplift,
+        adxRevenueUplift,
+        activeAds.impressions,
+        activeAds.revenue,
+        activeAds.adRequests,
+        activeAds.adRequests - activeAds.impressions,
+        activeAdsEcpm,
+        missingAds.impressions,
+        missingAds.revenue,
+        missingAds.adRequests,
+        missingAds.adRequests - missingAds.impressions,
+        missingAdsEcpm,
+        adsEcpmUplift,
+        adsEcpmPercentUplift,
+        adsRevenueUplift,
+      ]);
+    });
+
+    resultRows.sort((a, b) => a[0] - b[0]);
+
+    const outputHeader = [
+      'DATE',
+      'ACTIVE_ADX_IMPRESSIONS',
+      'ACTIVE_ADX_REVENUE',
+      'ACTIVE_ADX_AD_REQUESTS',
+      'ACTIVE_ADX_UNFILLED_IMPRESSIONS',
+      'ACTIVE_ADX_ECPM',
+      'MISSING_ADX_IMPRESSIONS',
+      'MISSING_ADX_REVENUE',
+      'MISSING_ADX_AD_REQUESTS',
+      'MISSING_ADX_UNFILLED_IMPRESSIONS',
+      'MISSING_ADX_ECPM',
+      'ADX_ECPM_UPLIFT',
+      'ADX_ECPM_%_UPLIFT',
+      'ADX_REVENUE_UPLIFT',
+      'ACTIVE_ADS_IMPRESSIONS',
+      'ACTIVE_ADS_REVENUE',
+      'ACTIVE_ADS_AD_REQUESTS',
+      'ACTIVE_ADS_UNFILLED_IMPRESSIONS',
+      'ACTIVE_ADS_ECPM',
+      'MISSING_ADS_IMPRESSIONS',
+      'MISSING_ADS_REVENUE',
+      'MISSING_ADS_AD_REQUESTS',
+      'MISSING_ADS_UNFILLED_IMPRESSIONS',
+      'MISSING_ADS_ECPM',
+      'ADS_ECPM_UPLIFT',
+      'ADS_ECPM_%_UPLIFT',
+      'ADS_REVENUE_UPLIFT',
+    ];
+
+    outputSheet.clearContents();
+    if (resultRows.length === 0) {
+      outputSheet.getRange(1, 1).setValue('No data after filters');
+      return;
+    }
+
+    const outRange = outputSheet.getRange(
+      1,
+      1,
+      resultRows.length + 1,
+      outputHeader.length
+    );
+    outRange.setValues([outputHeader].concat(resultRows));
+    outputSheet.getRange(2, 1, resultRows.length, 1).setNumberFormat('yyyy-mm-dd');
+    outputSheet.getRange(2, 13, resultRows.length, 1).setNumberFormat('0.00%');
+    outputSheet.getRange(2, 26, resultRows.length, 1).setNumberFormat('0.00%');
+
+    // Add totals row
+    const totalsRow = resultRows.length + 2;
+    outputSheet.getRange(totalsRow, 1).setValue('TOTALS');
+    
+    // Helper function to convert column number to A1 notation
+    function columnToLetter(column) {
+      let temp, letter = '';
+      while (column > 0) {
+        temp = (column - 1) % 26;
+        letter = String.fromCharCode(temp + 65) + letter;
+        column = (column - temp - 1) / 26;
+      }
+      return letter;
+    }
+    
+    // Sum columns (all except DATE, percentage columns, and ECPM/ECPM% uplift columns)
+    const sumColumns = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 27];
+    sumColumns.forEach(col => {
+      const colLetter = columnToLetter(col);
+      const formula = `=SUM(${colLetter}2:${colLetter}${totalsRow - 1})`;
+      outputSheet.getRange(totalsRow, col).setFormula(formula);
+    });
+    
+    // Average columns (ECPM uplift and percentage columns: 12, 13, 25, 26)
+    const avgColumns = [12, 13, 25, 26];
+    avgColumns.forEach(col => {
+      const colLetter = columnToLetter(col);
+      const formula = `=AVERAGE(${colLetter}2:${colLetter}${totalsRow - 1})`;
+      outputSheet.getRange(totalsRow, col).setFormula(formula);
+    });
+    
+    // Format percentage columns in totals row
+    outputSheet.getRange(totalsRow, 13).setNumberFormat('0.00%');
+    outputSheet.getRange(totalsRow, 26).setNumberFormat('0.00%');
+  }
+
+  // Step 2: Process data in chunks to accumulate TG/CG metrics by date
+  for (let startRow = 2; startRow <= lastRow; startRow += CHUNK_SIZE) {
+    const numRows = Math.min(CHUNK_SIZE, lastRow - startRow + 1);
+    const chunkRange = sourceSheet.getRange(startRow, 1, numRows, lastCol);
+    const chunkValues = chunkRange.getValues();
+
+    const localActiveAdx  = {};
+    const localMissingAdx = {};
+    const localActiveAds  = {};
+    const localMissingAds = {};
+
+    for (let i = 0; i < chunkValues.length; i++) {
+      const row = chunkValues[i];
+
+      const cd0        = CD0_COL !== null ? String(row[CD0_COL] || '') : '';
+      const ppidStatus = String(row[PPID_STATUS_COL] || '');
+      const demand     = String(row[DEMAND_CHANNEL_COL] || '');
+
+      // Step 2: Filters to define TG vs CG
+      if (CD0_COL !== null && cd0 === '(not applicable)') continue;
+      if (ppidStatus === 'Restricted') continue;
+      if (ppidStatus === 'Missing' && CD0_COL !== null && cd0 !== '8') continue;
+      if (demand !== 'AD_EXCHANGE' && demand !== 'AD_SERVER') continue;
+
+      const dateKey     = ensureDateKey(row[DATE_COL]);
+      const impressions = IMPRESSIONS_COL !== null ? row[IMPRESSIONS_COL] : 0;
+      const adxRev      = ADX_REV_COL !== null ? row[ADX_REV_COL] : 0;
+      const adsRev      = ADS_REV_COL !== null ? row[ADS_REV_COL] : 0;
+      const adRequests  = AD_REQUESTS_COL !== null ? row[AD_REQUESTS_COL] : 0;
+
+      // Step 2: Aggregate TG/CG per channel
+      if (demand === 'AD_EXCHANGE') {
+        if (ppidStatus === 'Active') {
+          addToMap(localActiveAdx, dateKey, impressions, adxRev, adRequests);
+        } else if (ppidStatus === 'Missing') {
+          addToMap(localMissingAdx, dateKey, impressions, adxRev, adRequests);
+        }
+      } else if (demand === 'AD_SERVER') {
+        if (ppidStatus === 'Active') {
+          addToMap(localActiveAds, dateKey, impressions, adsRev, adRequests);
+        } else if (ppidStatus === 'Missing') {
+          addToMap(localMissingAds, dateKey, impressions, adsRev, adRequests);
+        }
+      }
+    }
+
+    // Merge chunk-level maps into global maps
+    mergeMaps(activeAdxByDate,  localActiveAdx);
+    mergeMaps(missingAdxByDate, localMissingAdx);
+    mergeMaps(activeAdsByDate,  localActiveAds);
+    mergeMaps(missingAdsByDate, localMissingAds);
+
+    flushOutput();
+  }
+
+  flushOutput();
+}
