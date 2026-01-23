@@ -234,6 +234,15 @@ function buildASLReportv2() {
     });
   }
 
+  // Helper function: Defensive normalisation for status fields 
+  function normaliseStatus(value) {
+    const v = String(value || '').trim().toLowerCase();
+    if (v === 'active') return 'Active';
+    if (v === 'missing') return 'Missing';
+    if (v === 'restricted') return 'Restricted';
+    return v;
+  }
+
   // Step 2: Process source data in chunks for performance optimization
   for (let startRow = 2; startRow <= lastRow; startRow += CHUNK_SIZE) {
     const numRows = Math.min(CHUNK_SIZE, lastRow - startRow + 1);
@@ -257,8 +266,8 @@ function buildASLReportv2() {
 
       // Extract key dimension values
       const cd0        = String(row[CD0_COL] || '');
-      const ppidStatus = String(row[PPID_STATUS_COL] || '');
-      const tpidStatus = String(row[TPID_STATUS_COL] || '');
+      const ppidStatus = normaliseStatus(row[PPID_STATUS_COL] || '');
+      const tpidStatus = normaliseStatus(row[TPID_STATUS_COL] || '');
       const demand     = String(row[DEMAND_CHANNEL_COL] || '');
 
       // FILTER 1: Skip rows with no signal assignment
