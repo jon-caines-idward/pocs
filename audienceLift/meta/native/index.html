@@ -1,0 +1,165 @@
+<html>
+<head>
+  <title>Audience Lift Demo</title>
+  <script>
+    // create LS keys if required
+    (function() {
+      const key1 = 'cohort_ids';
+      if (!localStorage.getItem(key1)) {
+        const cohorts = ["33917"];          
+        localStorage.setItem(key1, JSON.stringify(cohorts));
+        console.log(`Set localStorage key '${key1}' with cohorts array.`);
+      } else {
+        console.log(`localStorage key '${key1}' already exists.`);
+      }
+      const key2 = 'cuid';
+      if (!localStorage.getItem(key2)) {
+        const cuid = 'f660ab912ec121d1b1e928a0bb4bc61b15f5ad44d5efdc4e1c92a25e99b8e44a';
+        localStorage.setItem(key2, cuid);
+        console.log(`Set localStorage key '${key2}' with CUID.`);
+      } else {
+        console.log(`localStorage key '${key2}' already exists.`);
+      }
+    })();
+    // facebook pixel code 
+    !function(f,b,e,v,n,t,s){
+      if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+      n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t,s)}(window, document,'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
+      // SHA-256 function
+      function sha256(str) {
+        var H = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19];
+        var K = [0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2];
+    
+        var msg = unescape(encodeURIComponent(str));
+        var msgLen = msg.length;
+        var w = [];
+    
+        for (var i = 0; i < msgLen; i++) {
+          w[i >> 2] |= (msg.charCodeAt(i) & 0xff) << (24 - (i % 4) * 8);
+        }
+    
+        w[msgLen >> 2] |= 0x80 << (24 - (msgLen % 4) * 8);
+        w[(((msgLen + 8) >> 6) << 4) + 15] = msgLen << 3;
+    
+        for (var i = 0; i < w.length; i += 16) {
+          var W = new Array(64);
+          var a = H[0], b = H[1], c = H[2], d = H[3], e = H[4], f = H[5], g = H[6], h = H[7];
+      
+          for (var j = 0; j < 64; j++) {
+            if (j < 16) {
+              W[j] = w[i + j] || 0;
+            } else {
+              var s0 = ((W[j - 15] >>> 7) | (W[j - 15] << 25)) ^ ((W[j - 15] >>> 18) | (W[j - 15] << 14)) ^ (W[j - 15] >>> 3);
+              var s1 = ((W[j - 2] >>> 17) | (W[j - 2] << 15)) ^ ((W[j - 2] >>> 19) | (W[j - 2] << 13)) ^ (W[j - 2] >>> 10);
+              W[j] = (W[j - 16] + s0 + W[j - 7] + s1) >>> 0;
+            }
+        
+            var S1 = ((e >>> 6) | (e << 26)) ^ ((e >>> 11) | (e << 21)) ^ ((e >>> 25) | (e << 7));
+            var ch = (e & f) ^ (~e & g);
+            var t1 = (h + S1 + ch + K[j] + W[j]) >>> 0;
+            var S0 = ((a >>> 2) | (a << 30)) ^ ((a >>> 13) | (a << 19)) ^ ((a >>> 22) | (a << 10));
+            var maj = (a & b) ^ (a & c) ^ (b & c);
+            var t2 = (S0 + maj) >>> 0;
+        
+            h = g; g = f; f = e; e = (d + t1) >>> 0;
+            d = c; c = b; b = a; a = (t1 + t2) >>> 0;
+          }
+      
+          H[0] = (H[0] + a) >>> 0; H[1] = (H[1] + b) >>> 0;
+          H[2] = (H[2] + c) >>> 0; H[3] = (H[3] + d) >>> 0;
+          H[4] = (H[4] + e) >>> 0; H[5] = (H[5] + f) >>> 0;
+          H[6] = (H[6] + g) >>> 0; H[7] = (H[7] + h) >>> 0;
+        }
+    
+        return H.map(function(h) {
+          return ('00000000' + h.toString(16)).slice(-8);
+        }).join('');
+      }
+      // Get GUID from localStorage and hash it
+      var externalId = null;
+      try {
+        var guid = localStorage.getItem('cuid');
+        if (guid) {
+          externalId = sha256(guid.toString().trim().toLowerCase());
+        }
+      } catch(e) {
+        console.error('Error retrieving or hashing GUID:', e);
+      }
+      // Initialize pixel with external_id
+      var initParams = {};
+      if (externalId) {
+        initParams.external_id = externalId;
+      }
+      fbq('init', '1296628448762435', initParams); 
+      fbq('track', 'PageView');
+      (function() {
+        const key1 = 'cohort_ids'; 
+        const key2 = 'cuid';
+        const data1 = localStorage.getItem(key1);
+        const data2 = localStorage.getItem(key2);
+        if (!data1) {
+          console.warn(`localStorage key '${key1}' not found.`);
+          return;
+        }
+        if (!data2) {
+          console.warn(`localStorage key '${key2}' not found.`);
+          return;
+        }
+      let cohorts;
+      let anonId;
+      try {
+        cohorts = JSON.parse(data1);
+      } catch (e) {
+        console.error(`Error parsing JSON from localStorage key '${key1}':`, e);
+        return;
+      }
+      try {
+        anonId = data2;
+      } catch (e) {
+        console.error(`Error getting from localStorage key '${key2}':`, e);
+        return;
+      }
+      if (!Array.isArray(cohorts)) {
+        console.error(`Expected an array for key '${key1}', but got:`, cohorts);
+        return;
+      }
+      cohorts.forEach(cohortId => {
+        fbq('trackCustom', 'AudienceLiftEntry', { audience_signal: cohortId });
+        console.log('Sent non core custom event to pixel with params: ' + anonId + ', ' + cohortId);
+        fbq('trackCustom', 'AudienceLiftEntry_' + cohortId );
+        console.log('Sent core custom event to pixel with params: ' + anonId + ', ' + cohortId);
+        
+        // Where CAPI is implemented also POST to our Node server 
+        return fetch('https://audiencelift.onrender.com:3000/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                anon_cuid: anonId,
+                audience_signal: cohortId
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                 throw new Error(`HTTP error! status: ${response.status}`);
+                 console.log(`Error occured in S2S: ${response.status}`);
+            }
+            return response.json();
+         });
+         console.log('Sent custom event to CAPI with the params: ' + anonId + ', ' + cohortId);
+      });
+  })();
+  </script>
+  <noscript><img height="1" width="1" style="display:none"
+    src="https://www.facebook.com/tr?id=1296628448762435&ev=PageView&noscript=1"
+  /></noscript>
+  <!-- End Meta Pixel Code -->
+</head>
+<body>
+  <h1>AudienceLift Demo</h1>
+</body>
+</html>
