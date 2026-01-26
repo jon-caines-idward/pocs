@@ -20,7 +20,6 @@
  *
  * KEY VALUE (CD0) ASSIGNMENTS:
  *   - CD0 = 1: PPID-only signal set
- *   - CD0 = 2: PPS-only signal set (not analyzed separately)
  *   - CD0 = 3: Combined Signals (PPID + PPS both set)
  *   - CD0 = 8: Control Group (signals deliberately withheld)
  *
