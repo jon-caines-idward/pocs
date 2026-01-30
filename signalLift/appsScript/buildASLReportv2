@@ -273,7 +273,7 @@ function buildASLReportv2() {
       if (cd0 === '' || cd0 === '(not applicable)') continue;
 
       // FILTER 2: Exclude Restricted statuses (unusable by Google, would skew results)
-      if (ppidStatus === 'Restricted' || tpidStatus === 'Restricted') continue;
+      if (ppidStatus === 'Restricted') continue;
 
       // FILTER 3: Only process the two main demand channels
       if (demand !== 'AD_EXCHANGE' && demand !== 'AD_SERVER') continue;
@@ -517,7 +517,53 @@ function generateOutput(ss, sheetName, treatment, control) {
     outputSheet.getRange(totalsRow, col).setFormula(formula);
   });
   
-  // Apply percentage formatting to totals row
+// Apply percentage formatting to totals row
   outputSheet.getRange(totalsRow, 13).setNumberFormat('0.00%'); // AdX % Uplift
   outputSheet.getRange(totalsRow, 26).setNumberFormat('0.00%'); // AdS % Uplift
+  
+  // CONDITIONAL FORMATTING FOR REVENUE UPLIFT COLUMNS
+  // AdX Revenue Uplift (column 14)
+  const adxUpliftRange = outputSheet.getRange(2, 14, resultRows.length, 1);
+  const adxUpliftValues = adxUpliftRange.getValues();
+  
+  for (let i = 0; i < adxUpliftValues.length; i++) {
+    const cell = outputSheet.getRange(i + 2, 14);
+    if (adxUpliftValues[i][0] > 0) {
+      cell.setBackground('#d9ead3'); // Light green
+    } else if (adxUpliftValues[i][0] < 0) {
+      cell.setBackground('#f4cccc'); // Light red
+    }
+  }
+  
+  // AdS Revenue Uplift (column 27)
+  const adsUpliftRange = outputSheet.getRange(2, 27, resultRows.length, 1);
+  const adsUpliftValues = adsUpliftRange.getValues();
+  
+  for (let i = 0; i < adsUpliftValues.length; i++) {
+    const cell = outputSheet.getRange(i + 2, 27);
+    if (adsUpliftValues[i][0] > 0) {
+      cell.setBackground('#d9ead3'); // Light green
+    } else if (adsUpliftValues[i][0] < 0) {
+      cell.setBackground('#f4cccc'); // Light red
+    }
+  }
+  
+  // Make TOTALS row bold for revenue uplift columns
+  outputSheet.getRange(totalsRow, 14).setFontWeight('bold'); // ADX_REVENUE_UPLIFT total
+  outputSheet.getRange(totalsRow, 27).setFontWeight('bold'); // ADS_REVENUE_UPLIFT total
+  
+  // Apply conditional formatting to totals cells
+  const adxTotalUplift = outputSheet.getRange(totalsRow, 14).getValue();
+  if (adxTotalUplift > 0) {
+    outputSheet.getRange(totalsRow, 14).setBackground('#93c47d'); // Darker green
+  } else if (adxTotalUplift < 0) {
+    outputSheet.getRange(totalsRow, 14).setBackground('#e06666'); // Darker red
+  }
+  
+  const adsTotalUplift = outputSheet.getRange(totalsRow, 27).getValue();
+  if (adsTotalUplift > 0) {
+    outputSheet.getRange(totalsRow, 27).setBackground('#93c47d'); // Darker green
+  } else if (adsTotalUplift < 0) {
+    outputSheet.getRange(totalsRow, 27).setBackground('#e06666'); // Darker red
+  }
 }
