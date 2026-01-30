@@ -68,23 +68,24 @@
  *   Treatment Group (TG):
  *     - CD0 = 3 (Combined signals set)
  *     - PPID Status = Active
- *     - Third-party ID Status = Any (Active or Missing)
+ *     - Third-party ID Status = Any (Active or Missing or Restricted)
  *
  *   Control Group (CG):
  *     - CD0 = 8 (control group)
  *     - PPID Status = Missing
- *     - Third-party ID Status = Any (Active or Missing)
+ *     - Third-party ID Status = Any (Active or Missing or Restricted)
  *
  * ==================================================================================
  * EXCLUSIONS (Applied to Both Signal Types):
  * ==================================================================================
  *
  * - PPID Status = Restricted (unusable by Google due to consent)
- * - Third-party ID Status = Restricted (unusable by Google due to consent)
  * - CD0 = (not applicable) or empty
  * - Demand Channel ≠ AD_EXCHANGE and ≠ AD_SERVER
  *
- * Restricted signals would negatively affect impression value and skew results.
+ * NOTE: Third-party ID Status = Restricted is EXCLUDED from PPID-only analysis
+ * but INCLUDED in Combined Signals analysis, as PPS provides value independently
+ * of third-party IDs, including when cookies are restricted.
  *
  * ==================================================================================
  * CALCULATION METHODOLOGY:
