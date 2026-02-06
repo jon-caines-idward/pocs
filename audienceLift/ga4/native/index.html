@@ -34,7 +34,7 @@
 
     // With gtag, user properties can be set but only sent with an event
     //gtag('set', 'user_properties', { 'anonymised_audiences': normalised }); 
-    gtag('event', 'Audience Lift Change', {'audience_signal': normalised });
+    gtag('event', 'AudienceLiftUpdate', {'audience_signal': normalised });
 
     localStorage.setItem(LAST_SENT_KEY, normalised);
     console.log('CohortDataChanged →', normalised);
