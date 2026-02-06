@@ -16,7 +16,7 @@
   window.dataLayer = window.dataLayer || [];
 
   const STORAGE_KEY = 'cohort_ids';
-  const EVENT_NAME = 'AudienceLiftChange';
+  const EVENT_NAME = 'AudienceLiftUpdate';
   const LAST_SENT_KEY = 'last_sent_cohort_ids'; // store last pushed value
 
   // --- HELPER: push to dataLayer ---
@@ -30,7 +30,7 @@
 
     window.dataLayer.push({
       event: EVENT_NAME,
-      anonymised_audiences: cohortList
+      audience_signal: cohortList
     });
 
     console.log(`${EVENT_NAME} pushed to dataLayer:`, cohortList);
@@ -87,7 +87,7 @@
 
   var audSigEl = document.getElementById('audSig');
   var audSig = audSigEl ? audSigEl.value : '';
-  var pushObj = { event: 'AudienceLiftEntry', audience_signal: audSig };
+  var pushObj = { event: 'AudienceLiftUpdate', audience_signal: audSig };
 
   window.dataLayer.push(pushObj);
 

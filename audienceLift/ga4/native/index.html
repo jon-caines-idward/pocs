@@ -33,8 +33,8 @@
     if (normalised === lastSent) return;
 
     // With gtag, user properties can be set but only sent with an event
-    gtag('set', 'user_properties', { 'anonymised_audiences': normalised }); 
-    gtag('event', 'Audience Lift Change');
+    //gtag('set', 'user_properties', { 'anonymised_audiences': normalised }); 
+    gtag('event', 'Audience Lift Change', {'audience_signal': normalised });
 
     localStorage.setItem(LAST_SENT_KEY, normalised);
     console.log('CohortDataChanged →', normalised);
@@ -75,7 +75,7 @@
 
   // Event-scoped cohort parameter
   if(audSig) {
-    gtag('event', 'AudienceLiftEntry', { 'audience_signal': audSig });
+    gtag('event', 'AudienceLiftUpdate', { 'audience_signal': audSig });
     console.log('AudienceLiftEntry cohort sent, event scoped, via gtag: ', audSig);
   }
 ">Send Signals to GA4 via gtag</a>
