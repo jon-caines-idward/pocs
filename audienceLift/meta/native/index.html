@@ -96,7 +96,9 @@
         initParams.external_id = externalId;
       }
       fbq('init', '1296628448762435', initParams); 
-      fbq('track', 'PageView');
+      var audienceSignal = localStorage.getItem('anon-audiences-meta');
+      fbq('track', 'PageView', audienceSignal ? { audience_signal: audienceSignal } : null);
+
       (function() {
         const key1 = 'cohort_ids'; 
         const key2 = 'cuid';
