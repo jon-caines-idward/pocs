@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AudienceLift · Persona Intelligence Report</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0d0f14;
+    --paper: #f7f4ef;
+    --cream: #ede9e1;
+    --accent: #e8500a;
+    --accent2: #2b5ce6;
+    --muted: #8a8478;
+    --success: #1a7a4a;
+    --warn: #b87800;
+    --divider: #d8d3c9;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Outfit', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── NOISE TEXTURE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.6;
+  }
+
+  /* ── MASTHEAD ── */
+  .masthead {
+    border-bottom: 1.5px solid var(--ink);
+    padding: 18px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    background: var(--paper);
+    z-index: 100;
+  }
+  .masthead-logo {
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+    font-size: 13px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .masthead-logo span { color: var(--accent); }
+  .masthead-meta {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    padding: 64px 48px 48px;
+    border-bottom: 1px solid var(--divider);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    align-items: end;
+  }
+  .hero-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+  .hero-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(42px, 5vw, 68px);
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+  }
+  .hero-title em { font-style: italic; color: var(--accent); }
+  .hero-subtitle {
+    margin-top: 20px;
+    font-size: 16px;
+    line-height: 1.65;
+    color: #3a3830;
+    max-width: 480px;
+  }
+  .hero-right {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-self: stretch;
+    justify-content: flex-end;
+  }
+  .hero-stat-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+  }
+  .hero-stat {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 20px 18px;
+    border-radius: 4px;
+  }
+  .hero-stat-num {
+    font-family: 'DM Serif Display', serif;
+    font-size: 32px;
+    line-height: 1;
+    color: var(--accent);
+  }
+  .hero-stat-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #9a9590;
+    margin-top: 6px;
+  }
+
+  /* ── TABS ── */
+  .tab-nav {
+    display: flex;
+    border-bottom: 1.5px solid var(--ink);
+    padding: 0 48px;
+    overflow-x: auto;
+    gap: 0;
+  }
+  .tab-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 16px 24px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--muted);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1.5px;
+    white-space: nowrap;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .tab-btn:hover { color: var(--ink); }
+  .tab-btn.active { color: var(--ink); border-bottom-color: var(--accent); font-weight: 500; }
+
+  /* ── SECTION WRAPPERS ── */
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .section {
+    padding: 48px 48px;
+    border-bottom: 1px solid var(--divider);
+  }
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .section-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    margin-bottom: 32px;
+  }
+
+  /* ── PROFILE CARD ── */
+  .profile-grid {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 32px;
+    align-items: start;
+  }
+  .profile-card {
+    background: var(--ink);
+    color: var(--paper);
+    border-radius: 6px;
+    padding: 32px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .profile-card::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 140px; height: 140px;
+    border-radius: 50%;
+    background: var(--accent);
+    opacity: 0.12;
+  }
+  .profile-avatar {
+    width: 72px; height: 72px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    color: white;
+    margin-bottom: 20px;
+  }
+  .profile-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    margin-bottom: 4px;
+  }
+  .profile-archetype {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 20px;
+  }
+  .profile-tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 16px;
+  }
+  .profile-tag {
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    padding: 4px 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+  }
+  .profile-divider {
+    height: 1px;
+    background: rgba(255,255,255,0.12);
+    margin: 16px 0;
+  }
+  .profile-mini-stat {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #b0ab9f;
+    margin-bottom: 6px;
+  }
+  .profile-mini-stat span:last-child {
+    color: var(--paper);
+    font-weight: 500;
+  }
+
+  /* ── ATTRIBUTE DETAIL GRID ── */
+  .attr-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .attr-card {
+    border: 1px solid var(--divider);
+    border-radius: 4px;
+    padding: 20px;
+    transition: border-color 0.2s, transform 0.2s;
+    cursor: default;
+  }
+  .attr-card:hover {
+    border-color: var(--ink);
+    transform: translateY(-2px);
+  }
+  .attr-card-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .attr-card-value {
+    font-size: 15px;
+    font-weight: 500;
+    margin-bottom: 10px;
+    line-height: 1.3;
+  }
+  .attr-card-confidence {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .conf-bar-track {
+    flex: 1;
+    height: 3px;
+    background: var(--divider);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .conf-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--accent);
+    transition: width 1s cubic-bezier(0.16,1,0.3,1);
+  }
+  .conf-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    min-width: 30px;
+  }
+
+  /* ── INTEREST MAP ── */
+  .interest-section { padding: 48px; }
+  .interest-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 32px;
+  }
+  .interest-categories {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .interest-cat {
+    border: 1px solid var(--divider);
+    border-radius: 4px;
+    padding: 16px;
+  }
+  .interest-cat-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  .interest-cat-score {
+    font-family: 'DM Serif Display', serif;
+    font-size: 36px;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .interest-cat-label { font-size: 12px; color: var(--muted); }
+  .interest-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .interest-tag {
+    padding: 6px 12px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 400;
+    border: 1px solid;
+    transition: transform 0.15s;
+  }
+  .interest-tag:hover { transform: scale(1.04); }
+  .tag-high { background: #fef3ec; border-color: #f0a070; color: #7a2800; }
+  .tag-med  { background: #eef2fd; border-color: #a0b4f0; color: #1a3070; }
+  .tag-low  { background: var(--cream); border-color: var(--divider); color: var(--muted); }
+
+  /* ── RADAR / SPIDER CHART ── */
+  .radar-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    align-items: center;
+    padding: 48px;
+    border-bottom: 1px solid var(--divider);
+  }
+  .radar-canvas-wrap {
+    aspect-ratio: 1;
+    max-width: 420px;
+    margin: 0 auto;
+  }
+  canvas { width: 100% !important; height: 100% !important; }
+  .radar-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .radar-legend-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 12px;
+    align-items: center;
+  }
+  .radar-legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+  .radar-legend-label { font-size: 13px; }
+  .radar-legend-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .radar-score-bar {
+    width: 100%;
+    height: 4px;
+    background: var(--divider);
+    border-radius: 2px;
+    margin-top: 4px;
+    overflow: hidden;
+  }
+  .radar-score-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+
+  /* ── FUNNEL ── */
+  .funnel-section { padding: 48px; border-bottom: 1px solid var(--divider); }
+  .funnel-wrap {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    align-items: center;
+  }
+  .funnel-stages { display: flex; flex-direction: column; gap: 8px; }
+  .funnel-stage {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    border-radius: 4px;
+    cursor: default;
+    transition: transform 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+  .funnel-stage:hover { transform: translateX(4px); }
+  .funnel-stage-bg {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    border-radius: 4px;
+    opacity: 0.12;
+    transition: width 1.2s cubic-bezier(0.16,1,0.3,1);
+  }
+  .funnel-stage-icon {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .funnel-stage-text { flex: 1; position: relative; }
+  .funnel-stage-name { font-size: 14px; font-weight: 500; }
+  .funnel-stage-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .funnel-stage-pct {
+    font-family: 'DM Mono', monospace;
+    font-size: 20px;
+    font-weight: 500;
+    position: relative;
+  }
+
+  /* ── CHANNEL MAP ── */
+  .channel-section { padding: 48px; border-bottom: 1px solid var(--divider); }
+  .channel-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+  }
+  .channel-card {
+    border: 1px solid var(--divider);
+    border-radius: 6px;
+    padding: 20px 16px;
+    text-align: center;
+    transition: all 0.2s;
+    cursor: default;
+  }
+  .channel-card:hover {
+    border-color: var(--accent);
+    background: #fef3ec;
+  }
+  .channel-icon { font-size: 28px; margin-bottom: 10px; }
+  .channel-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .channel-reach {
+    font-family: 'DM Serif Display', serif;
+    font-size: 24px;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .channel-index {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 100px;
+    display: inline-block;
+  }
+  .index-high { background: #fef3ec; color: var(--accent); }
+  .index-med  { background: #eef2fd; color: var(--accent2); }
+  .index-low  { background: var(--cream); color: var(--muted); }
+
+  /* ── SIGNAL QUALITY ── */
+  .signal-section { padding: 48px; }
+  .signal-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .signal-card {
+    padding: 24px;
+    border-radius: 4px;
+    border: 1px solid var(--divider);
+  }
+  .signal-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+  }
+  .signal-type {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .signal-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    padding: 3px 8px;
+    border-radius: 2px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .badge-live { background: #d4f0e4; color: #0d5c30; }
+  .badge-model { background: #fef3ec; color: #7a2800; }
+  .badge-inferred { background: #eef2fd; color: #1a3070; }
+  .signal-name { font-size: 15px; font-weight: 500; margin-bottom: 6px; }
+  .signal-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .signal-quality {
+    display: flex;
+    gap: 4px;
+    margin-top: 14px;
+  }
+  .signal-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+  }
+  .dot-filled { background: var(--accent); }
+  .dot-empty { background: var(--divider); }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .fade-up {
+    animation: fadeUp 0.5s cubic-bezier(0.16,1,0.3,1) both;
+  }
+  .fade-up:nth-child(2) { animation-delay: 0.06s; }
+  .fade-up:nth-child(3) { animation-delay: 0.12s; }
+  .fade-up:nth-child(4) { animation-delay: 0.18s; }
+  .fade-up:nth-child(5) { animation-delay: 0.24s; }
+
+  @keyframes growBar {
+    from { width: 0; }
+  }
+
+  /* ── FOOTER ── */
+  .report-footer {
+    padding: 24px 48px;
+    border-top: 1.5px solid var(--ink);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .footer-brand {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+  }
+  .footer-brand b { color: var(--ink); }
+  .footer-note {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+  }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--cream); }
+  ::-webkit-scrollbar-thumb { background: var(--divider); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- MASTHEAD -->
+<header class="masthead">
+  <div class="masthead-logo">Audience<span>Lift</span> · Persona Intelligence</div>
+  <div class="masthead-meta">Report ID: ALR-2026-0312 · Segment: Premium Auto Intenders · Cohort Size: 142,800</div>
+</header>
+
+<!-- HERO -->
+<div class="hero">
+  <div>
+    <div class="hero-label">Audience Intelligence Report</div>
+    <h1 class="hero-title">The <em>Ambitious</em><br>Upgrader</h1>
+    <p class="hero-subtitle">A high-intent, affluence-adjacent segment actively researching premium automotive upgrades. Driven by performance aspiration, status awareness, and pragmatic decision-making — reachable without a single cookie.</p>
+  </div>
+  <div class="hero-right">
+    <div class="hero-stat-row">
+      <div class="hero-stat fade-up">
+        <div class="hero-stat-num">142K</div>
+        <div class="hero-stat-label">Cohort Size</div>
+      </div>
+      <div class="hero-stat fade-up">
+        <div class="hero-stat-num">87%</div>
+        <div class="hero-stat-label">Signal Confidence</div>
+      </div>
+      <div class="hero-stat fade-up">
+        <div class="hero-stat-num">3.4×</div>
+        <div class="hero-stat-label">Intent Index</div>
+      </div>
+    </div>
+    <div class="hero-stat-row">
+      <div class="hero-stat fade-up" style="background:#e8500a; grid-column: span 3;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div class="hero-stat-num" style="color:white; font-size:20px;">Cookieless · Privacy-by-Design · On-Device Processing</div>
+            <div class="hero-stat-label" style="color:rgba(255,255,255,0.7);">All signals derived without persistent identifiers</div>
+          </div>
+          <div style="font-size:28px;">🔒</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAB NAV -->
+<nav class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('profile')">Profile</button>
+  <button class="tab-btn" onclick="switchTab('interests')">Interests & Behaviours</button>
+  <button class="tab-btn" onclick="switchTab('mindset')">Mindset Dimensions</button>
+  <button class="tab-btn" onclick="switchTab('funnel')">Funnel Position</button>
+  <button class="tab-btn" onclick="switchTab('channels')">Channel Strategy</button>
+  <button class="tab-btn" onclick="switchTab('signals')">Signal Quality</button>
+</nav>
+
+<!-- ═══════════════ TAB: PROFILE ═══════════════ -->
+<div id="tab-profile" class="tab-panel active">
+  <div class="section">
+    <div class="section-label">Who they are</div>
+    <div class="section-title">Demographic & Psychographic Profile</div>
+    <div class="profile-grid">
+      <div class="profile-card">
+        <div class="profile-avatar">A</div>
+        <div class="profile-name">Alex, 38</div>
+        <div class="profile-archetype">The Ambitious Upgrader</div>
+        <div class="profile-divider"></div>
+        <div class="profile-mini-stat"><span>Age range</span><span>32 – 48</span></div>
+        <div class="profile-mini-stat"><span>Location bias</span><span>Urban / Suburban</span></div>
+        <div class="profile-mini-stat"><span>Device primary</span><span>Mobile (iOS)</span></div>
+        <div class="profile-mini-stat"><span>Active hours</span><span>07:00 – 09:00, 20:00+</span></div>
+        <div class="profile-mini-stat"><span>Content mode</span><span>Research-heavy</span></div>
+        <div class="profile-divider"></div>
+        <div class="profile-tag-list">
+          <span class="profile-tag">Performance-oriented</span>
+          <span class="profile-tag">Brand-aware</span>
+          <span class="profile-tag">Comparison shopper</span>
+          <span class="profile-tag">Tech-forward</span>
+          <span class="profile-tag">Status-conscious</span>
+        </div>
+      </div>
+      <div class="attr-grid">
+        <div class="attr-card fade-up">
+          <div class="attr-card-label">Income Signal</div>
+          <div class="attr-card-value">Affluence-Adjacent<br><small style="font-size:11px;color:var(--muted);">Upper-middle bracket inferred</small></div>
+          <div class="attr-card-confidence">
+            <div class="conf-bar-track"><div class="conf-bar-fill" style="width:72%"></div></div>
+            <span class="conf-label">72%</span>
+          </div>
+        </div>
+        <div class="attr-card fade-up">
+          <div class="attr-card-label">Life Stage</div>
+          <div class="attr-card-value">Established household<br><small style="font-size:11px;color:var(--muted);">Likely dual income, 1–2 children</small></div>
+          <div class="attr-card-confidence">
+            <div class="conf-bar-track"><div class="conf-bar-fill" style="width:58%"></div></div>
+            <span class="conf-label">58%</span>
+          </div>
+        </div>
+        <div class="attr-card fade-up">
+          <div class="attr-card-label">Occupation Signal</div>
+          <div class="attr-card-value">Professional / Managerial<br><small style="font-size:11px;color:var(--muted);">Finance, tech, consulting affinity</small></div>
+          <div class="attr-card-confidence">
+            <div class="conf-bar-track"><div class="conf-bar-fill" style="width:61%"></div></div>
+            <span class="conf-label">61%</span>
+          </div>
+        </div>
+        <div class="attr-card fade-up">
+          <div class="attr-card-label">Geography</div>
+          <div class="attr-card-value">UK South East, M25 corridor<br><small style="font-size:11px;color:var(--muted);">Publisher network signal</small></div>
+          <div class="attr-card-confidence">
+            <div class="conf-bar-track"><div class="conf-bar-fill" style="width:94%"></div></div>
+            <span class="conf-label">94%</span>
+          </div>
+        </div>
+        <div class="attr-card fade-up">
+          <div class="attr-card-label">Device Ecosystem</div>
+          <div class="attr-card-value">iOS primary, desktop research<br><small style="font-size:11px;color:var(--muted);">Cross-device pattern observed</small></div>
+          <div class="attr-card-confidence">
+            <div class="conf-bar-track"><div class="conf-bar-fill" style="width:88%"></div></div>
+            <span class="conf-label">88%</span>
+          </div>
+        </div>
+        <div class="attr-card fade-up">
+          <div class="attr-card-label">Category Loyalty</div>
+          <div class="attr-card-value">Brand switcher, quality-led<br><small style="font-size:11px;color:var(--muted);">Open to new marques</small></div>
+          <div class="attr-card-confidence">
+            <div class="conf-bar-track"><div class="conf-bar-fill" style="width:65%"></div></div>
+            <span class="conf-label">65%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ TAB: INTERESTS ═══════════════ -->
+<div id="tab-interests" class="tab-panel">
+  <div class="interest-section">
+    <div class="interest-header">
+      <div>
+        <div class="section-label">IAB Taxonomy + NLP Topics</div>
+        <div class="section-title">Interests & Content Affinities</div>
+      </div>
+    </div>
+    <div class="interest-categories">
+      <div class="interest-cat fade-up">
+        <div class="interest-cat-name">Automotive</div>
+        <div class="interest-cat-score" style="color:var(--accent)">94</div>
+        <div class="interest-cat-label">Index vs baseline</div>
+        <div style="height:3px;background:var(--divider);border-radius:2px;margin-top:10px"><div style="height:100%;width:94%;background:var(--accent);border-radius:2px"></div></div>
+      </div>
+      <div class="interest-cat fade-up">
+        <div class="interest-cat-name">Technology</div>
+        <div class="interest-cat-score" style="color:var(--accent2)">78</div>
+        <div class="interest-cat-label">Index vs baseline</div>
+        <div style="height:3px;background:var(--divider);border-radius:2px;margin-top:10px"><div style="height:100%;width:78%;background:var(--accent2);border-radius:2px"></div></div>
+      </div>
+      <div class="interest-cat fade-up">
+        <div class="interest-cat-name">Finance</div>
+        <div class="interest-cat-score" style="color:var(--success)">71</div>
+        <div class="interest-cat-label">Index vs baseline</div>
+        <div style="height:3px;background:var(--divider);border-radius:2px;margin-top:10px"><div style="height:100%;width:71%;background:var(--success);border-radius:2px"></div></div>
+      </div>
+      <div class="interest-cat fade-up">
+        <div class="interest-cat-name">Lifestyle</div>
+        <div class="interest-cat-score" style="color:var(--warn)">56</div>
+        <div class="interest-cat-label">Index vs baseline</div>
+        <div style="height:3px;background:var(--divider);border-radius:2px;margin-top:10px"><div style="height:100%;width:56%;background:var(--warn);border-radius:2px"></div></div>
+      </div>
+    </div>
+
+    <div style="margin-top:32px">
+      <div class="section-label" style="margin-bottom:16px">NLP-derived topic signals · High affinity</div>
+      <div class="interest-tags">
+        <span class="interest-tag tag-high">EV range anxiety</span>
+        <span class="interest-tag tag-high">premium SUV comparison</span>
+        <span class="interest-tag tag-high">finance vs PCP</span>
+        <span class="interest-tag tag-high">German marques</span>
+        <span class="interest-tag tag-high">performance spec sheets</span>
+        <span class="interest-tag tag-med">smart home integration</span>
+        <span class="interest-tag tag-med">connected car tech</span>
+        <span class="interest-tag tag-med">fuel cost calculators</span>
+        <span class="interest-tag tag-med">road test reviews</span>
+        <span class="interest-tag tag-med">depreciation rates</span>
+        <span class="interest-tag tag-med">fleet vs personal</span>
+        <span class="interest-tag tag-low">travel destinations</span>
+        <span class="interest-tag tag-low">outdoor gear</span>
+        <span class="interest-tag tag-low">home renovation</span>
+        <span class="interest-tag tag-low">investment news</span>
+      </div>
+      <div style="margin-top:12px; display:flex; gap:16px; font-size:11px; color:var(--muted);">
+        <span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:#f0a070;display:inline-block"></span> High affinity</span>
+        <span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:#a0b4f0;display:inline-block"></span> Medium affinity</span>
+        <span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:var(--divider);display:inline-block"></span> Peripheral signal</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ TAB: MINDSET ═══════════════ -->
+<div id="tab-mindset" class="tab-panel">
+  <div class="radar-section">
+    <div>
+      <div class="section-label">Psychographic dimensions</div>
+      <div class="section-title" style="margin-bottom:8px">Mindset Profile</div>
+      <p style="font-size:14px;color:var(--muted);margin-bottom:32px;line-height:1.6">Scored 0–100 against category norms. Derived from content engagement patterns, dwell time, and NLP topic clustering.</p>
+      <div class="radar-legend">
+        <div class="radar-legend-item fade-up">
+          <div class="radar-legend-dot"></div>
+          <div>
+            <div class="radar-legend-label">Performance Aspiration</div>
+            <div class="radar-score-bar"><div class="radar-score-fill" style="width:88%"></div></div>
+          </div>
+          <div class="radar-legend-val">88</div>
+        </div>
+        <div class="radar-legend-item fade-up">
+          <div class="radar-legend-dot" style="background:var(--accent2)"></div>
+          <div>
+            <div class="radar-legend-label">Research Depth</div>
+            <div class="radar-score-bar"><div class="radar-score-fill" style="width:82%;background:var(--accent2)"></div></div>
+          </div>
+          <div class="radar-legend-val">82</div>
+        </div>
+        <div class="radar-legend-item fade-up">
+          <div class="radar-legend-dot" style="background:var(--success)"></div>
+          <div>
+            <div class="radar-legend-label">Status Awareness</div>
+            <div class="radar-score-bar"><div class="radar-score-fill" style="width:74%;background:var(--success)"></div></div>
+          </div>
+          <div class="radar-legend-val">74</div>
+        </div>
+        <div class="radar-legend-item fade-up">
+          <div class="radar-legend-dot" style="background:var(--warn)"></div>
+          <div>
+            <div class="radar-legend-label">Price Pragmatism</div>
+            <div class="radar-score-bar"><div class="radar-score-fill" style="width:69%;background:var(--warn)"></div></div>
+          </div>
+          <div class="radar-legend-val">69</div>
+        </div>
+        <div class="radar-legend-item fade-up">
+          <div class="radar-legend-dot" style="background:#9b59b6"></div>
+          <div>
+            <div class="radar-legend-label">Sustainability Consideration</div>
+            <div class="radar-score-bar"><div class="radar-score-fill" style="width:61%;background:#9b59b6"></div></div>
+          </div>
+          <div class="radar-legend-val">61</div>
+        </div>
+        <div class="radar-legend-item fade-up">
+          <div class="radar-legend-dot" style="background:#16a085"></div>
+          <div>
+            <div class="radar-legend-label">Brand Loyalty</div>
+            <div class="radar-score-bar"><div class="radar-score-fill" style="width:44%;background:#16a085"></div></div>
+          </div>
+          <div class="radar-legend-val">44</div>
+        </div>
+      </div>
+    </div>
+    <div class="radar-canvas-wrap">
+      <canvas id="radarChart" width="420" height="420"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ TAB: FUNNEL ═══════════════ -->
+<div id="tab-funnel" class="tab-panel">
+  <div class="funnel-section">
+    <div class="section-label">Purchase journey mapping</div>
+    <div class="section-title">Funnel Position & Intent Signals</div>
+    <div class="funnel-wrap">
+      <div class="funnel-stages">
+        <div class="funnel-stage fade-up" style="background:#f7f4ef">
+          <div class="funnel-stage-bg" style="background:#8a8478;width:100%"></div>
+          <div class="funnel-stage-icon" style="background:#e8e4dc">🔍</div>
+          <div class="funnel-stage-text">
+            <div class="funnel-stage-name">Awareness</div>
+            <div class="funnel-stage-desc">Broad category content consumption</div>
+          </div>
+          <div class="funnel-stage-pct" style="color:var(--muted)">100%</div>
+        </div>
+        <div class="funnel-stage fade-up" style="background:#fef3ec">
+          <div class="funnel-stage-bg" style="background:var(--accent);width:82%"></div>
+          <div class="funnel-stage-icon" style="background:#fde4d0">📋</div>
+          <div class="funnel-stage-text">
+            <div class="funnel-stage-name">Research & Consideration</div>
+            <div class="funnel-stage-desc">Model comparison, spec sheet dwell, review sites</div>
+          </div>
+          <div class="funnel-stage-pct" style="color:var(--accent)">82%</div>
+        </div>
+        <div class="funnel-stage fade-up" style="background:#fff8ee">
+          <div class="funnel-stage-bg" style="background:var(--warn);width:58%"></div>
+          <div class="funnel-stage-icon" style="background:#fef0cc">🧮</div>
+          <div class="funnel-stage-text">
+            <div class="funnel-stage-name">Intent & Evaluation</div>
+            <div class="funnel-stage-desc">Finance calculators, dealer locators, configurators</div>
+          </div>
+          <div class="funnel-stage-pct" style="color:var(--warn)">58%</div>
+        </div>
+        <div class="funnel-stage fade-up" style="background:#eef7f2">
+          <div class="funnel-stage-bg" style="background:var(--success);width:34%"></div>
+          <div class="funnel-stage-icon" style="background:#c8ead8">📅</div>
+          <div class="funnel-stage-text">
+            <div class="funnel-stage-name">High Intent</div>
+            <div class="funnel-stage-desc">Test drive requests, stock availability searches</div>
+          </div>
+          <div class="funnel-stage-pct" style="color:var(--success)">34%</div>
+        </div>
+        <div class="funnel-stage fade-up" style="background:#f0f4ff">
+          <div class="funnel-stage-bg" style="background:var(--accent2);width:12%"></div>
+          <div class="funnel-stage-icon" style="background:#d0dcf8">✅</div>
+          <div class="funnel-stage-text">
+            <div class="funnel-stage-name">Conversion</div>
+            <div class="funnel-stage-desc">Purchase confirmed or imminent</div>
+          </div>
+          <div class="funnel-stage-pct" style="color:var(--accent2)">12%</div>
+        </div>
+      </div>
+      <div>
+        <div style="background:var(--ink);color:var(--paper);border-radius:6px;padding:32px;">
+          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#9a9590;margin-bottom:24px">Creative strategy by stage</div>
+          <div style="display:flex;flex-direction:column;gap:20px">
+            <div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+                <span style="font-size:13px;font-weight:500">Research & Consideration</span>
+                <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--accent)">82% of cohort</span>
+              </div>
+              <div style="font-size:12px;color:#9a9590;line-height:1.6">Lead with performance specs and comparison messaging. Long-form video, editorial adjacency. Rational proof with emotional aspiration.</div>
+            </div>
+            <div style="height:1px;background:rgba(255,255,255,0.1)"></div>
+            <div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+                <span style="font-size:13px;font-weight:500">Intent & Evaluation</span>
+                <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--warn)">58% of cohort</span>
+              </div>
+              <div style="font-size:12px;color:#9a9590;line-height:1.6">Finance offer messaging. Configurator CTAs. Dynamic ads showing local stock. Urgency signals appropriate here.</div>
+            </div>
+            <div style="height:1px;background:rgba(255,255,255,0.1)"></div>
+            <div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+                <span style="font-size:13px;font-weight:500">High Intent</span>
+                <span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--success)">34% of cohort</span>
+              </div>
+              <div style="font-size:12px;color:#9a9590;line-height:1.6">Test drive booking. Personal offer. Dealer proximity. Minimal friction — one clear CTA.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ TAB: CHANNELS ═══════════════ -->
+<div id="tab-channels" class="tab-panel">
+  <div class="channel-section">
+    <div class="section-label">Media & platform strategy</div>
+    <div class="section-title">Channel Affinity & Reach Index</div>
+    <div class="channel-grid">
+      <div class="channel-card fade-up">
+        <div class="channel-icon">📘</div>
+        <div class="channel-name">Meta</div>
+        <div class="channel-reach">68%</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Estimated reach</div>
+        <span class="channel-index index-high">3.1× index</span>
+      </div>
+      <div class="channel-card fade-up">
+        <div class="channel-icon">🔴</div>
+        <div class="channel-name">YouTube</div>
+        <div class="channel-reach">74%</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Estimated reach</div>
+        <span class="channel-index index-high">3.4× index</span>
+      </div>
+      <div class="channel-card fade-up">
+        <div class="channel-icon">🔵</div>
+        <div class="channel-name">Google Search</div>
+        <div class="channel-reach">91%</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Estimated reach</div>
+        <span class="channel-index index-high">4.1× index</span>
+      </div>
+      <div class="channel-card fade-up">
+        <div class="channel-icon">🎵</div>
+        <div class="channel-name">TikTok</div>
+        <div class="channel-reach">41%</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Estimated reach</div>
+        <span class="channel-index index-med">1.8× index</span>
+      </div>
+      <div class="channel-card fade-up">
+        <div class="channel-icon">🌐</div>
+        <div class="channel-name">Contextual Display</div>
+        <div class="channel-reach">88%</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Estimated reach</div>
+        <span class="channel-index index-high">2.9× index</span>
+      </div>
+    </div>
+    <div style="margin-top:32px;background:var(--cream);border-radius:6px;padding:24px 28px;border:1px solid var(--divider)">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:16px">AudienceLift activation pathway</div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0;align-items:center">
+        <div style="text-align:center;padding:12px">
+          <div style="font-size:11px;font-weight:500;margin-bottom:4px">1. Build Cohort</div>
+          <div style="font-size:10px;color:var(--muted)">On-device signal processing</div>
+        </div>
+        <div style="text-align:center;color:var(--accent);font-size:18px">→</div>
+        <div style="text-align:center;padding:12px">
+          <div style="font-size:11px;font-weight:500;margin-bottom:4px">2. Enrich Seed</div>
+          <div style="font-size:10px;color:var(--muted)">Match to 1P CRM data</div>
+        </div>
+        <div style="text-align:center;color:var(--accent);font-size:18px">→</div>
+        <div style="text-align:center;padding:12px">
+          <div style="font-size:11px;font-weight:500;margin-bottom:4px">3. Activate</div>
+          <div style="font-size:10px;color:var(--muted)">Meta · Google · TikTok · YouTube</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ TAB: SIGNALS ═══════════════ -->
+<div id="tab-signals" class="tab-panel">
+  <div class="signal-section">
+    <div class="section-label">Data provenance</div>
+    <div class="section-title">Signal Quality & Source Transparency</div>
+    <div class="signal-grid">
+      <div class="signal-card fade-up">
+        <div class="signal-card-header">
+          <div class="signal-type">Behavioural</div>
+          <span class="signal-badge badge-live">Live</span>
+        </div>
+        <div class="signal-name">IAB Content Category</div>
+        <div class="signal-desc">Derived from publisher content classification across the network. Real-time, session-level signal. High fidelity for category intent.</div>
+        <div class="signal-quality">
+          <div class="signal-dot dot-filled"></div><div class="signal-dot dot-filled"></div><div class="signal-dot dot-filled"></div><div class="signal-dot dot-filled"></div><div class="signal-dot dot-filled"></div>
+        </div>
+      </div>
+      <div class="signal-card fade-up">
+        <div class="signal-card-header">
+          <div class="signal-type">NLP Derived</div>
+          <span class="signal-badge badge-live">Live</span>
+        </div>
+        <div class="signal-name">Topic Interest Score</div>
+        <div class="signal-desc">On-device NLP processing of content consumed. Granular topic-level signal without PII transmission. Refreshed per session.</div>
+        <div class="signal-quality">
+          <div class="signal-dot dot-filled"></div><div class="signal-dot dot-filled"></div><div class="signal-dot dot-filled"></div><div class="signal-dot dot-filled"></div><div class="signal-dot dot-filled"></div>
+        </div>
+      </div>
+      <div class="signal-card fade-up">
+        <div class="signal-card-header">
+          <div class="signal-type">Behavioural</div>
+          <span class="signal-badge badge-live">Live</span>
+        </div>
+        <div class="signal-name">Purchase Intent Events</div>
+        <div class="signal-desc">On-site event signals from publisher inventory: configurator visits, finance tool interactions, dealer locator engagement.</div>
+        <div class="signal-quality">
+          <div class="signal-dot dot-filled"></div><div class="signal-dot dot-filled"></div><div class="signal-dot dot-filled"></div><div class="signal-dot dot-filled"></div><div class="signal-dot dot-empty"></div>
+        </div>
+      </div>
+      <div class="signal-card fade-up">
+        <div class="signal-card-header">
+          <div class="signal-type">Geographic</div>
+          <span class="signal-badge badge-live">Live</span>
+        </div>
+        <div class="signal-name">Location Signal</div>
+        <div class="signal-desc">IP-level geo resolution to region/city. No persistent location tracking. Refreshed each session. High confidence.</div>
+        <div class="signal-quality">
+          <div class="signal-dot dot-filled"></div><div class="signal-dot dot-filled"></div><div class="signal-dot dot-filled"></div><div class="signal-dot dot-filled"></div><div class="signal-dot dot-empty"></div>
+        </div>
+      </div>
+      <div class="signal-card fade-up">
+        <div class="signal-card-header">
+          <div class="signal-type">Demographic</div>
+          <span class="signal-badge badge-inferred">Inferred</span>
+        </div>
+        <div class="signal-name">Age & Life Stage</div>
+        <div class="signal-desc">Modelled from content affinity patterns. Not directly observed. Confidence lower — treat as directional signal for creative, not targeting.</div>
+        <div class="signal-quality">
+          <div class="signal-dot dot-filled"></div><div class="signal-dot dot-filled"></div><div class="signal-dot dot-filled"></div><div class="signal-dot dot-empty"></div><div class="signal-dot dot-empty"></div>
+        </div>
+      </div>
+      <div class="signal-card fade-up">
+        <div class="signal-card-header">
+          <div class="signal-type">Demographic</div>
+          <span class="signal-badge badge-model">Modelled</span>
+        </div>
+        <div class="signal-name">Income / Affluence</div>
+        <div class="signal-desc">Derived from content consumption patterns and geo-economic overlays. Probabilistic — use to inform tone and offer strategy only.</div>
+        <div class="signal-quality">
+          <div class="signal-dot dot-filled"></div><div class="signal-dot dot-filled"></div><div class="signal-dot dot-empty"></div><div class="signal-dot dot-empty"></div><div class="signal-dot dot-empty"></div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:24px;display:flex;gap:24px;font-size:12px;color:var(--muted);">
+      <span style="display:flex;align-items:center;gap:6px">
+        <span class="signal-badge badge-live">Live</span> Real-time, session-derived
+      </span>
+      <span style="display:flex;align-items:center;gap:6px">
+        <span class="signal-badge badge-inferred">Inferred</span> Behavioural pattern modelling
+      </span>
+      <span style="display:flex;align-items:center;gap:6px">
+        <span class="signal-badge badge-model">Modelled</span> Statistical estimation, treat as directional
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer class="report-footer">
+  <div class="footer-brand">
+    <b>AudienceLift</b> · Persona Intelligence Report · Anonymised Ltd · Cookieless by design
+  </div>
+  <div class="footer-note">Generated: March 2026 · No persistent identifiers used in signal collection</div>
+</footer>
+
+<script>
+// ── TAB SWITCHING ──
+function switchTab(id) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.currentTarget.classList.add('active');
+  if (id === 'mindset') drawRadar();
+}
+
+// ── RADAR CHART (pure canvas, no lib) ──
+function drawRadar() {
+  const canvas = document.getElementById('radarChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const cx = canvas.width / 2, cy = canvas.height / 2;
+  const R = Math.min(cx, cy) - 48;
+
+  const labels = ['Performance\nAspiration','Research\nDepth','Status\nAwareness','Price\nPragmatism','Sustainability','Brand\nLoyalty'];
+  const values = [0.88, 0.82, 0.74, 0.69, 0.61, 0.44];
+  const colors = ['#e8500a','#2b5ce6','#1a7a4a','#b87800','#9b59b6','#16a085'];
+  const n = labels.length;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Grid rings
+  for (let r = 1; r <= 4; r++) {
+    ctx.beginPath();
+    for (let i = 0; i < n; i++) {
+      const angle = (Math.PI * 2 * i / n) - Math.PI / 2;
+      const x = cx + (R * r / 4) * Math.cos(angle);
+      const y = cy + (R * r / 4) * Math.sin(angle);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = 'rgba(0,0,0,0.06)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // Axes
+  for (let i = 0; i < n; i++) {
+    const angle = (Math.PI * 2 * i / n) - Math.PI / 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + R * Math.cos(angle), cy + R * Math.sin(angle));
+    ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // Fill area
+  ctx.beginPath();
+  for (let i = 0; i < n; i++) {
+    const angle = (Math.PI * 2 * i / n) - Math.PI / 2;
+    const x = cx + R * values[i] * Math.cos(angle);
+    const y = cy + R * values[i] * Math.sin(angle);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(232, 80, 10, 0.12)';
+  ctx.fill();
+  ctx.strokeStyle = '#e8500a';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Dots
+  for (let i = 0; i < n; i++) {
+    const angle = (Math.PI * 2 * i / n) - Math.PI / 2;
+    const x = cx + R * values[i] * Math.cos(angle);
+    const y = cy + R * values[i] * Math.sin(angle);
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, Math.PI * 2);
+    ctx.fillStyle = colors[i];
+    ctx.fill();
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  // Labels
+  ctx.font = '11px "DM Mono", monospace';
+  ctx.fillStyle = '#3a3830';
+  ctx.textAlign = 'center';
+  for (let i = 0; i < n; i++) {
+    const angle = (Math.PI * 2 * i / n) - Math.PI / 2;
+    const labelR = R + 32;
+    const lx = cx + labelR * Math.cos(angle);
+    const ly = cy + labelR * Math.sin(angle);
+    const lines = labels[i].split('\n');
+    lines.forEach((line, li) => {
+      ctx.fillText(line, lx, ly + li * 14 - (lines.length - 1) * 7);
+    });
+  }
+}
+
+// Animate confidence bars on load
+window.addEventListener('load', () => {
+  document.querySelectorAll('.conf-bar-fill').forEach(bar => {
+    const w = bar.style.width;
+    bar.style.width = '0';
+    setTimeout(() => { bar.style.width = w; }, 200);
+  });
+  document.querySelectorAll('.radar-score-fill').forEach(bar => {
+    const w = bar.style.width;
+    bar.style.width = '0';
+    setTimeout(() => { bar.style.width = w; }, 300);
+  });
+});
+</script>
+</body>
+</html>
