@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AudienceLift · Persona Portfolio</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #0b0c0f;
+  --surface:  #111318;
+  --surface2: #181b22;
+  --border:   #1e2128;
+  --border2:  #2a2e38;
+  --text:     #e8e6e0;
+  --muted:    #5a5e6a;
+  --muted2:   #3a3e48;
+
+  /* Persona accent colours */
+  --p1: #f97316; /* Ambitious Upgrader — amber */
+  --p2: #22d3ee; /* Digital Native — cyan */
+  --p3: #a78bfa; /* Conscious Consumer — violet */
+  --p4: #4ade80; /* Family Planner — green */
+  --p5: #fb7185; /* Urban Explorer — rose */
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-weight: 300;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ─── SCANLINE TEXTURE ─── */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.03) 2px,
+    rgba(0,0,0,0.03) 4px
+  );
+  pointer-events: none;
+  z-index: 999;
+}
+
+/* ─── LAYOUT ─── */
+.app { display: grid; grid-template-rows: 52px 1fr; height: 100vh; }
+
+/* ─── TOPBAR ─── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  z-index: 50;
+}
+.topbar-left { display: flex; align-items: center; gap: 24px; }
+.logo {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+.logo span { color: var(--p1); }
+.topbar-divider { width: 1px; height: 20px; background: var(--border2); }
+.account-name {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+}
+.topbar-right { display: flex; align-items: center; gap: 16px; }
+.view-toggle {
+  display: flex;
+  gap: 2px;
+  background: var(--bg);
+  border-radius: 4px;
+  padding: 3px;
+  border: 1px solid var(--border);
+}
+.view-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 5px 10px;
+  border-radius: 3px;
+  font-size: 13px;
+  transition: all 0.15s;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+.view-btn:hover { color: var(--text); }
+.view-btn.active { background: var(--surface2); color: var(--text); }
+.btn-primary {
+  background: var(--p1);
+  color: #0b0c0f;
+  border: none;
+  padding: 7px 14px;
+  border-radius: 4px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-weight: 500;
+  transition: opacity 0.15s;
+}
+.btn-primary:hover { opacity: 0.85; }
+
+/* ─── MAIN BODY ─── */
+.main { display: grid; grid-template-columns: 260px 1fr; overflow: hidden; }
+
+/* ─── SIDEBAR ─── */
+.sidebar {
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+.sidebar-section {
+  padding: 20px 16px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+.persona-list { display: flex; flex-direction: column; gap: 2px; }
+.persona-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border: 1px solid transparent;
+  position: relative;
+}
+.persona-item:hover { background: var(--surface2); }
+.persona-item.active {
+  background: var(--surface2);
+  border-color: var(--border2);
+}
+.persona-pip {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.persona-item-info { flex: 1; min-width: 0; }
+.persona-item-name {
+  font-size: 13px;
+  font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+.persona-item-size {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+}
+.persona-item-badge {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  padding: 2px 6px;
+  border-radius: 2px;
+  letter-spacing: 0.06em;
+}
+.badge-hot { background: rgba(249,115,22,0.15); color: var(--p1); }
+.badge-new { background: rgba(34,211,238,0.15); color: var(--p2); }
+.badge-rising { background: rgba(74,222,128,0.15); color: var(--p4); }
+
+.sidebar-stats { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.sidebar-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.sidebar-stat-label { font-size: 11px; color: var(--muted); }
+.sidebar-stat-val {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  color: var(--text);
+}
+
+/* ─── CONTENT AREA ─── */
+.content { overflow-y: auto; }
+
+/* ─── PORTFOLIO VIEW ─── */
+#view-portfolio { display: block; }
+#view-compare  { display: none; }
+#view-detail   { display: none; }
+
+.portfolio-header {
+  padding: 28px 32px 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 24px;
+}
+.portfolio-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+}
+.portfolio-subtitle {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.sort-controls { display: flex; gap: 8px; }
+.sort-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--muted);
+  padding: 6px 12px;
+  border-radius: 3px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sort-btn:hover, .sort-btn.active { color: var(--text); border-color: var(--border2); background: #1e2230; }
+
+/* ─── PERSONA CARDS GRID ─── */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 16px;
+  padding: 0 32px 32px;
+}
+
+.persona-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.2s;
+  animation: cardIn 0.4s cubic-bezier(0.16,1,0.3,1) both;
+}
+.persona-card:hover {
+  border-color: var(--border2);
+  transform: translateY(-2px);
+}
+.persona-card:nth-child(1) { animation-delay: 0.04s }
+.persona-card:nth-child(2) { animation-delay: 0.08s }
+.persona-card:nth-child(3) { animation-delay: 0.12s }
+.persona-card:nth-child(4) { animation-delay: 0.16s }
+.persona-card:nth-child(5) { animation-delay: 0.20s }
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.card-band {
+  height: 3px;
+}
+.card-header {
+  padding: 20px 20px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.card-name {
+  font-family: 'Syne', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 3px;
+}
+.card-archetype {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.card-size-block { text-align: right; }
+.card-size-num {
+  font-family: 'Syne', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+}
+.card-size-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+}
+
+.card-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.card-metric {
+  padding: 12px 14px;
+  border-right: 1px solid var(--border);
+}
+.card-metric:last-child { border-right: none; }
+.card-metric-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 5px;
+}
+.card-metric-val {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.card-interests {
+  padding: 14px 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.card-tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  padding: 3px 8px;
+  border-radius: 2px;
+  background: var(--surface2);
+  color: var(--muted);
+  border: 1px solid var(--border2);
+  letter-spacing: 0.04em;
+}
+
+.card-footer {
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.card-funnel {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.funnel-dot {
+  width: 6px; height: 6px;
+  border-radius: 1px;
+}
+.card-cta {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.15s;
+}
+.persona-card:hover .card-cta { color: var(--text); }
+
+/* ─── OVERLAP MATRIX ─── */
+.overlap-section {
+  padding: 0 32px 32px;
+}
+.overlap-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 16px;
+  padding-top: 8px;
+}
+.overlap-grid {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.overlap-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+}
+.overlap-table th {
+  padding: 10px 14px;
+  text-align: left;
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  border-bottom: 1px solid var(--border);
+  font-weight: 400;
+}
+.overlap-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+}
+.overlap-table tr:last-child td { border-bottom: none; }
+.overlap-table tr:hover td { background: var(--surface2); }
+.overlap-pip-pair { display: flex; gap: 4px; align-items: center; }
+.overlap-bar-cell { width: 160px; }
+.overlap-bar {
+  height: 4px;
+  background: var(--border2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.overlap-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.8s cubic-bezier(0.16,1,0.3,1);
+}
+.overlap-warn { color: #fb7185; font-size: 9px; }
+.overlap-ok   { color: var(--p4); font-size: 9px; }
+
+/* ─── COMPARE VIEW ─── */
+.compare-header {
+  padding: 28px 32px 0;
+  margin-bottom: 24px;
+}
+.compare-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.compare-subtitle { font-size: 12px; color: var(--muted); }
+
+.compare-picker {
+  padding: 0 32px;
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.compare-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-radius: 100px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  border: 1px solid var(--border2);
+  transition: all 0.15s;
+  background: var(--surface);
+}
+.compare-chip.selected { border-width: 1.5px; }
+.compare-chip .pip { width: 8px; height: 8px; border-radius: 50%; }
+
+.compare-table-wrap { padding: 0 32px 32px; overflow-x: auto; }
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 700px;
+}
+.compare-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 500;
+  background: var(--surface);
+  border-bottom: 2px solid var(--border2);
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: 0.06em;
+}
+.compare-table td {
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  vertical-align: top;
+}
+.compare-table tr:hover td { background: var(--surface2); }
+.compare-row-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  min-width: 160px;
+}
+.compare-cell-val { font-size: 13px; font-weight: 400; }
+.compare-cell-sub { font-size: 10px; color: var(--muted); margin-top: 2px; }
+.compare-bar-wrap { display: flex; align-items: center; gap: 8px; }
+.compare-bar-track {
+  flex: 1; height: 3px;
+  background: var(--border2);
+  border-radius: 2px;
+  overflow: hidden;
+  min-width: 60px;
+}
+.compare-bar-fill { height: 100%; border-radius: 2px; }
+.compare-val-mono {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  min-width: 28px;
+}
+.compare-section-header td {
+  background: var(--bg);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted2);
+  padding: 8px 16px;
+}
+
+/* ─── DETAIL VIEW ─── */
+.detail-header {
+  padding: 24px 32px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.detail-back {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--muted);
+  padding: 7px 12px;
+  border-radius: 3px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  cursor: pointer;
+  letter-spacing: 0.08em;
+  transition: color 0.15s;
+}
+.detail-back:hover { color: var(--text); }
+.detail-name {
+  font-family: 'Syne', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+}
+.detail-body { padding: 32px; }
+.detail-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-bottom: 32px;
+}
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 16px;
+}
+.kpi-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.kpi-val {
+  font-family: 'Syne', sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+}
+.kpi-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+.detail-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+.detail-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 20px;
+}
+.detail-panel-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+.channel-list { display: flex; flex-direction: column; gap: 10px; }
+.channel-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 40px;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+.channel-name-cell { color: var(--text); }
+.channel-bar-track {
+  height: 4px;
+  background: var(--border2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.channel-bar-fill { height: 100%; border-radius: 2px; }
+.channel-pct {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  text-align: right;
+}
+.topic-cloud { display: flex; flex-wrap: wrap; gap: 6px; }
+.topic-chip {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  padding: 4px 9px;
+  border-radius: 2px;
+  border: 1px solid;
+  letter-spacing: 0.04em;
+  cursor: default;
+  transition: opacity 0.15s;
+}
+.topic-chip:hover { opacity: 0.75; }
+.activate-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  margin-top: 20px;
+}
+.activate-btn {
+  padding: 14px;
+  border-radius: 4px;
+  border: 1px solid var(--border2);
+  background: var(--surface2);
+  color: var(--text);
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-align: center;
+  transition: all 0.15s;
+  text-transform: uppercase;
+}
+.activate-btn:hover { border-color: var(--text); }
+.activate-btn span { display: block; font-size: 18px; margin-bottom: 6px; }
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="logo">Audience<span>Lift</span></div>
+      <div class="topbar-divider"></div>
+      <div class="account-name">Meridian Auto Group · Campaign Q2 2026</div>
+    </div>
+    <div class="topbar-right">
+      <div class="view-toggle">
+        <button class="view-btn active" onclick="showView('portfolio', this)">Portfolio</button>
+        <button class="view-btn" onclick="showView('compare', this)">Compare</button>
+      </div>
+      <button class="btn-primary">+ New Persona</button>
+    </div>
+  </header>
+
+  <div class="main">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Active Personas</div>
+        <div class="persona-list">
+          <div class="persona-item active" onclick="openDetail(0)">
+            <div class="persona-pip" style="background:var(--p1)"></div>
+            <div class="persona-item-info">
+              <div class="persona-item-name">Ambitious Upgrader</div>
+              <div class="persona-item-size">142K reach</div>
+            </div>
+            <span class="persona-item-badge badge-hot">HOT</span>
+          </div>
+          <div class="persona-item" onclick="openDetail(1)">
+            <div class="persona-pip" style="background:var(--p2)"></div>
+            <div class="persona-item-info">
+              <div class="persona-item-name">Digital Native</div>
+              <div class="persona-item-size">98K reach</div>
+            </div>
+            <span class="persona-item-badge badge-new">NEW</span>
+          </div>
+          <div class="persona-item" onclick="openDetail(2)">
+            <div class="persona-pip" style="background:var(--p3)"></div>
+            <div class="persona-item-info">
+              <div class="persona-item-name">Conscious Consumer</div>
+              <div class="persona-item-size">76K reach</div>
+            </div>
+          </div>
+          <div class="persona-item" onclick="openDetail(3)">
+            <div class="persona-pip" style="background:var(--p4)"></div>
+            <div class="persona-item-info">
+              <div class="persona-item-name">Family Planner</div>
+              <div class="persona-item-size">211K reach</div>
+            </div>
+            <span class="persona-item-badge badge-rising">↑</span>
+          </div>
+          <div class="persona-item" onclick="openDetail(4)">
+            <div class="persona-pip" style="background:var(--p5)"></div>
+            <div class="persona-item-info">
+              <div class="persona-item-name">Urban Explorer</div>
+              <div class="persona-item-size">63K reach</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="sidebar-stats">
+        <div class="sidebar-label" style="margin-bottom:4px">Portfolio Summary</div>
+        <div class="sidebar-stat">
+          <span class="sidebar-stat-label">Total addressable</span>
+          <span class="sidebar-stat-val">590K</span>
+        </div>
+        <div class="sidebar-stat">
+          <span class="sidebar-stat-label">Net unduplicated</span>
+          <span class="sidebar-stat-val">487K</span>
+        </div>
+        <div class="sidebar-stat">
+          <span class="sidebar-stat-label">Avg. intent index</span>
+          <span class="sidebar-stat-val">2.9×</span>
+        </div>
+        <div class="sidebar-stat">
+          <span class="sidebar-stat-label">Avg. confidence</span>
+          <span class="sidebar-stat-val">84%</span>
+        </div>
+        <div class="sidebar-stat">
+          <span class="sidebar-stat-label">Est. overlap</span>
+          <span class="sidebar-stat-val" style="color:#fb7185">17.5%</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CONTENT -->
+    <div class="content">
+
+      <!-- ═══ PORTFOLIO VIEW ═══ -->
+      <div id="view-portfolio">
+        <div class="portfolio-header">
+          <div>
+            <div class="portfolio-title">Persona Portfolio</div>
+            <div class="portfolio-subtitle">5 personas · 590K total reach · 17.5% estimated overlap</div>
+          </div>
+          <div class="sort-controls">
+            <button class="sort-btn active">Size ↓</button>
+            <button class="sort-btn">Intent</button>
+            <button class="sort-btn">Confidence</button>
+          </div>
+        </div>
+
+        <!-- PERSONA CARDS -->
+        <div class="cards-grid">
+
+          <!-- Card 1 -->
+          <div class="persona-card" onclick="openDetail(0)">
+            <div class="card-band" style="background:var(--p1)"></div>
+            <div class="card-header">
+              <div>
+                <div class="card-name">Ambitious Upgrader</div>
+                <div class="card-archetype" style="color:var(--p1)">Premium Auto · High Intent</div>
+              </div>
+              <div class="card-size-block">
+                <div class="card-size-num" style="color:var(--p1)">142K</div>
+                <div class="card-size-label">reach</div>
+              </div>
+            </div>
+            <div class="card-metrics">
+              <div class="card-metric">
+                <div class="card-metric-label">Intent Index</div>
+                <div class="card-metric-val" style="color:var(--p1)">3.4×</div>
+              </div>
+              <div class="card-metric">
+                <div class="card-metric-label">Confidence</div>
+                <div class="card-metric-val">87%</div>
+              </div>
+              <div class="card-metric">
+                <div class="card-metric-label">Funnel Stage</div>
+                <div class="card-metric-val">Research</div>
+              </div>
+            </div>
+            <div class="card-interests">
+              <span class="card-tag">premium SUV</span>
+              <span class="card-tag">PCP finance</span>
+              <span class="card-tag">EV range</span>
+              <span class="card-tag">spec comparison</span>
+              <span class="card-tag">+8</span>
+            </div>
+            <div class="card-footer">
+              <div class="card-funnel">
+                <div class="funnel-dot" style="background:var(--p1)"></div>
+                <div class="funnel-dot" style="background:var(--p1)"></div>
+                <div class="funnel-dot" style="background:var(--p1)"></div>
+                <div class="funnel-dot" style="background:var(--border2)"></div>
+                <div class="funnel-dot" style="background:var(--border2)"></div>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);margin-left:6px">Stage 3 of 5</span>
+              </div>
+              <div class="card-cta">View report →</div>
+            </div>
+          </div>
+
+          <!-- Card 2 -->
+          <div class="persona-card" onclick="openDetail(1)">
+            <div class="card-band" style="background:var(--p2)"></div>
+            <div class="card-header">
+              <div>
+                <div class="card-name">Digital Native</div>
+                <div class="card-archetype" style="color:var(--p2)">EV · Tech Forward</div>
+              </div>
+              <div class="card-size-block">
+                <div class="card-size-num" style="color:var(--p2)">98K</div>
+                <div class="card-size-label">reach</div>
+              </div>
+            </div>
+            <div class="card-metrics">
+              <div class="card-metric">
+                <div class="card-metric-label">Intent Index</div>
+                <div class="card-metric-val" style="color:var(--p2)">2.8×</div>
+              </div>
+              <div class="card-metric">
+                <div class="card-metric-label">Confidence</div>
+                <div class="card-metric-val">81%</div>
+              </div>
+              <div class="card-metric">
+                <div class="card-metric-label">Funnel Stage</div>
+                <div class="card-metric-val">Awareness</div>
+              </div>
+            </div>
+            <div class="card-interests">
+              <span class="card-tag">EV charging</span>
+              <span class="card-tag">home tech</span>
+              <span class="card-tag">sustainability</span>
+              <span class="card-tag">app ecosystem</span>
+              <span class="card-tag">+5</span>
+            </div>
+            <div class="card-footer">
+              <div class="card-funnel">
+                <div class="funnel-dot" style="background:var(--p2)"></div>
+                <div class="funnel-dot" style="background:var(--p2)"></div>
+                <div class="funnel-dot" style="background:var(--border2)"></div>
+                <div class="funnel-dot" style="background:var(--border2)"></div>
+                <div class="funnel-dot" style="background:var(--border2)"></div>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);margin-left:6px">Stage 2 of 5</span>
+              </div>
+              <div class="card-cta">View report →</div>
+            </div>
+          </div>
+
+          <!-- Card 3 -->
+          <div class="persona-card" onclick="openDetail(2)">
+            <div class="card-band" style="background:var(--p3)"></div>
+            <div class="card-header">
+              <div>
+                <div class="card-name">Conscious Consumer</div>
+                <div class="card-archetype" style="color:var(--p3)">Hybrid · Value-led</div>
+              </div>
+              <div class="card-size-block">
+                <div class="card-size-num" style="color:var(--p3)">76K</div>
+                <div class="card-size-label">reach</div>
+              </div>
+            </div>
+            <div class="card-metrics">
+              <div class="card-metric">
+                <div class="card-metric-label">Intent Index</div>
+                <div class="card-metric-val" style="color:var(--p3)">2.2×</div>
+              </div>
+              <div class="card-metric">
+                <div class="card-metric-label">Confidence</div>
+                <div class="card-metric-val">79%</div>
+              </div>
+              <div class="card-metric">
+                <div class="card-metric-label">Funnel Stage</div>
+                <div class="card-metric-val">Evaluation</div>
+              </div>
+            </div>
+            <div class="card-interests">
+              <span class="card-tag">hybrid MPG</span>
+              <span class="card-tag">TCO calc</span>
+              <span class="card-tag">ethical brand</span>
+              <span class="card-tag">running costs</span>
+            </div>
+            <div class="card-footer">
+              <div class="card-funnel">
+                <div class="funnel-dot" style="background:var(--p3)"></div>
+                <div class="funnel-dot" style="background:var(--p3)"></div>
+                <div class="funnel-dot" style="background:var(--p3)"></div>
+                <div class="funnel-dot" style="background:var(--p3)"></div>
+                <div class="funnel-dot" style="background:var(--border2)"></div>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);margin-left:6px">Stage 4 of 5</span>
+              </div>
+              <div class="card-cta">View report →</div>
+            </div>
+          </div>
+
+          <!-- Card 4 -->
+          <div class="persona-card" onclick="openDetail(3)">
+            <div class="card-band" style="background:var(--p4)"></div>
+            <div class="card-header">
+              <div>
+                <div class="card-name">Family Planner</div>
+                <div class="card-archetype" style="color:var(--p4)">7-seat · Safety-led</div>
+              </div>
+              <div class="card-size-block">
+                <div class="card-size-num" style="color:var(--p4)">211K</div>
+                <div class="card-size-label">reach</div>
+              </div>
+            </div>
+            <div class="card-metrics">
+              <div class="card-metric">
+                <div class="card-metric-label">Intent Index</div>
+                <div class="card-metric-val" style="color:var(--p4)">3.1×</div>
+              </div>
+              <div class="card-metric">
+                <div class="card-metric-label">Confidence</div>
+                <div class="card-metric-val">91%</div>
+              </div>
+              <div class="card-metric">
+                <div class="card-metric-label">Funnel Stage</div>
+                <div class="card-metric-val">Research</div>
+              </div>
+            </div>
+            <div class="card-interests">
+              <span class="card-tag">7-seat SUV</span>
+              <span class="card-tag">NCAP safety</span>
+              <span class="card-tag">boot space</span>
+              <span class="card-tag">reliability</span>
+              <span class="card-tag">+6</span>
+            </div>
+            <div class="card-footer">
+              <div class="card-funnel">
+                <div class="funnel-dot" style="background:var(--p4)"></div>
+                <div class="funnel-dot" style="background:var(--p4)"></div>
+                <div class="funnel-dot" style="background:var(--p4)"></div>
+                <div class="funnel-dot" style="background:var(--border2)"></div>
+                <div class="funnel-dot" style="background:var(--border2)"></div>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);margin-left:6px">Stage 3 of 5</span>
+              </div>
+              <div class="card-cta">View report →</div>
+            </div>
+          </div>
+
+          <!-- Card 5 -->
+          <div class="persona-card" onclick="openDetail(4)">
+            <div class="card-band" style="background:var(--p5)"></div>
+            <div class="card-header">
+              <div>
+                <div class="card-name">Urban Explorer</div>
+                <div class="card-archetype" style="color:var(--p5)">City car · Style-led</div>
+              </div>
+              <div class="card-size-block">
+                <div class="card-size-num" style="color:var(--p5)">63K</div>
+                <div class="card-size-label">reach</div>
+              </div>
+            </div>
+            <div class="card-metrics">
+              <div class="card-metric">
+                <div class="card-metric-label">Intent Index</div>
+                <div class="card-metric-val" style="color:var(--p5)">2.1×</div>
+              </div>
+              <div class="card-metric">
+                <div class="card-metric-label">Confidence</div>
+                <div class="card-metric-val">76%</div>
+              </div>
+              <div class="card-metric">
+                <div class="card-metric-label">Funnel Stage</div>
+                <div class="card-metric-val">Awareness</div>
+              </div>
+            </div>
+            <div class="card-interests">
+              <span class="card-tag">parking ease</span>
+              <span class="card-tag">city insurance</span>
+              <span class="card-tag">compact EV</span>
+              <span class="card-tag">design</span>
+            </div>
+            <div class="card-footer">
+              <div class="card-funnel">
+                <div class="funnel-dot" style="background:var(--p5)"></div>
+                <div class="funnel-dot" style="background:var(--p5)"></div>
+                <div class="funnel-dot" style="background:var(--border2)"></div>
+                <div class="funnel-dot" style="background:var(--border2)"></div>
+                <div class="funnel-dot" style="background:var(--border2)"></div>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);margin-left:6px">Stage 2 of 5</span>
+              </div>
+              <div class="card-cta">View report →</div>
+            </div>
+          </div>
+
+        </div><!-- /cards-grid -->
+
+        <!-- OVERLAP MATRIX -->
+        <div class="overlap-section">
+          <div class="overlap-label">Audience Overlap Matrix — estimated duplication between personas</div>
+          <div class="overlap-grid">
+            <table class="overlap-table">
+              <thead>
+                <tr>
+                  <th>Persona Pair</th>
+                  <th>Overlap %</th>
+                  <th class="overlap-bar-cell">Scale</th>
+                  <th>Shared Topics</th>
+                  <th>Recommendation</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <div class="overlap-pip-pair">
+                      <div class="persona-pip" style="background:var(--p1)"></div>
+                      <div class="persona-pip" style="background:var(--p2)"></div>
+                      <span style="font-size:12px">Upgrader × Digital Native</span>
+                    </div>
+                  </td>
+                  <td><span style="font-family:'IBM Plex Mono',monospace;color:#fb7185">24.1%</span></td>
+                  <td><div class="overlap-bar"><div class="overlap-bar-fill" style="width:24%;background:#fb7185"></div></div></td>
+                  <td style="font-size:11px;color:var(--muted)">EV range, connected car</td>
+                  <td><span class="overlap-warn">⚠ Review creative messaging</span></td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="overlap-pip-pair">
+                      <div class="persona-pip" style="background:var(--p1)"></div>
+                      <div class="persona-pip" style="background:var(--p3)"></div>
+                      <span style="font-size:12px">Upgrader × Conscious Consumer</span>
+                    </div>
+                  </td>
+                  <td><span style="font-family:'IBM Plex Mono',monospace;color:#fb7185">18.7%</span></td>
+                  <td><div class="overlap-bar"><div class="overlap-bar-fill" style="width:19%;background:#fb7185"></div></div></td>
+                  <td style="font-size:11px;color:var(--muted)">Finance, running costs</td>
+                  <td><span class="overlap-warn">⚠ Consider frequency cap</span></td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="overlap-pip-pair">
+                      <div class="persona-pip" style="background:var(--p4)"></div>
+                      <div class="persona-pip" style="background:var(--p3)"></div>
+                      <span style="font-size:12px">Family Planner × Conscious Consumer</span>
+                    </div>
+                  </td>
+                  <td><span style="font-family:'IBM Plex Mono',monospace;color:var(--muted)">9.2%</span></td>
+                  <td><div class="overlap-bar"><div class="overlap-bar-fill" style="width:9%;background:var(--p4)"></div></div></td>
+                  <td style="font-size:11px;color:var(--muted)">Reliability, running costs</td>
+                  <td><span class="overlap-ok">✓ Acceptable</span></td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="overlap-pip-pair">
+                      <div class="persona-pip" style="background:var(--p4)"></div>
+                      <div class="persona-pip" style="background:var(--p5)"></div>
+                      <span style="font-size:12px">Family Planner × Urban Explorer</span>
+                    </div>
+                  </td>
+                  <td><span style="font-family:'IBM Plex Mono',monospace;color:var(--muted)">4.8%</span></td>
+                  <td><div class="overlap-bar"><div class="overlap-bar-fill" style="width:5%;background:var(--p4)"></div></div></td>
+                  <td style="font-size:11px;color:var(--muted)">Insurance costs</td>
+                  <td><span class="overlap-ok">✓ Low risk</span></td>
+                </tr>
+                <tr>
+                  <td>
+                    <div class="overlap-pip-pair">
+                      <div class="persona-pip" style="background:var(--p2)"></div>
+                      <div class="persona-pip" style="background:var(--p5)"></div>
+                      <span style="font-size:12px">Digital Native × Urban Explorer</span>
+                    </div>
+                  </td>
+                  <td><span style="font-family:'IBM Plex Mono',monospace;color:var(--muted)">11.3%</span></td>
+                  <td><div class="overlap-bar"><div class="overlap-bar-fill" style="width:11%;background:var(--p2)"></div></div></td>
+                  <td style="font-size:11px;color:var(--muted)">Compact EV, city use</td>
+                  <td><span class="overlap-ok">✓ Acceptable</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div><!-- /view-portfolio -->
+
+      <!-- ═══ COMPARE VIEW ═══ -->
+      <div id="view-compare">
+        <div class="compare-header">
+          <div class="compare-title">Side-by-Side Comparison</div>
+          <div class="compare-subtitle">Select personas to compare across all dimensions</div>
+        </div>
+        <div class="compare-picker">
+          <div class="compare-chip selected" style="border-color:var(--p1);color:var(--p1)" onclick="toggleChip(this,'p1')">
+            <div class="pip" style="background:var(--p1)"></div> Ambitious Upgrader
+          </div>
+          <div class="compare-chip selected" style="border-color:var(--p4);color:var(--p4)" onclick="toggleChip(this,'p4')">
+            <div class="pip" style="background:var(--p4)"></div> Family Planner
+          </div>
+          <div class="compare-chip" style="color:var(--muted)" onclick="toggleChip(this,'p2')">
+            <div class="pip" style="background:var(--p2)"></div> Digital Native
+          </div>
+          <div class="compare-chip" style="color:var(--muted)" onclick="toggleChip(this,'p3')">
+            <div class="pip" style="background:var(--p3)"></div> Conscious Consumer
+          </div>
+          <div class="compare-chip" style="color:var(--muted)" onclick="toggleChip(this,'p5')">
+            <div class="pip" style="background:var(--p5)"></div> Urban Explorer
+          </div>
+        </div>
+
+        <div class="compare-table-wrap">
+          <table class="compare-table">
+            <thead>
+              <tr>
+                <th style="width:180px">Dimension</th>
+                <th><span style="color:var(--p1)">●</span> Ambitious Upgrader</th>
+                <th><span style="color:var(--p4)">●</span> Family Planner</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="compare-section-header"><td colspan="3">Scale & Confidence</td></tr>
+              <tr>
+                <td class="compare-row-label">Cohort Size</td>
+                <td><div class="compare-bar-wrap"><div class="compare-bar-track"><div class="compare-bar-fill" style="width:67%;background:var(--p1)"></div></div><span class="compare-val-mono">142K</span></div></td>
+                <td><div class="compare-bar-wrap"><div class="compare-bar-track"><div class="compare-bar-fill" style="width:100%;background:var(--p4)"></div></div><span class="compare-val-mono">211K</span></div></td>
+              </tr>
+              <tr>
+                <td class="compare-row-label">Signal Confidence</td>
+                <td><div class="compare-bar-wrap"><div class="compare-bar-track"><div class="compare-bar-fill" style="width:87%;background:var(--p1)"></div></div><span class="compare-val-mono">87%</span></div></td>
+                <td><div class="compare-bar-wrap"><div class="compare-bar-track"><div class="compare-bar-fill" style="width:91%;background:var(--p4)"></div></div><span class="compare-val-mono">91%</span></div></td>
+              </tr>
+              <tr>
+                <td class="compare-row-label">Intent Index</td>
+                <td><div class="compare-bar-wrap"><div class="compare-bar-track"><div class="compare-bar-fill" style="width:85%;background:var(--p1)"></div></div><span class="compare-val-mono">3.4×</span></div></td>
+                <td><div class="compare-bar-wrap"><div class="compare-bar-track"><div class="compare-bar-fill" style="width:78%;background:var(--p4)"></div></div><span class="compare-val-mono">3.1×</span></div></td>
+              </tr>
+              <tr class="compare-section-header"><td colspan="3">Mindset Dimensions</td></tr>
+              <tr>
+                <td class="compare-row-label">Performance Aspiration</td>
+                <td><div class="compare-bar-wrap"><div class="compare-bar-track"><div class="compare-bar-fill" style="width:88%;background:var(--p1)"></div></div><span class="compare-val-mono">88</span></div></td>
+                <td><div class="compare-bar-wrap"><div class="compare-bar-track"><div class="compare-bar-fill" style="width:42%;background:var(--p4)"></div></div><span class="compare-val-mono">42</span></div></td>
+              </tr>
+              <tr>
+                <td class="compare-row-label">Price Pragmatism</td>
+                <td><div class="compare-bar-wrap"><div class="compare-bar-track"><div class="compare-bar-fill" style="width:69%;background:var(--p1)"></div></div><span class="compare-val-mono">69</span></div></td>
+                <td><div class="compare-bar-wrap"><div class="compare-bar-track"><div class="compare-bar-fill" style="width:84%;background:var(--p4)"></div></div><span class="compare-val-mono">84</span></div></td>
+              </tr>
+              <tr>
+                <td class="compare-row-label">Safety Orientation</td>
+                <td><div class="compare-bar-wrap"><div class="compare-bar-track"><div class="compare-bar-fill" style="width:51%;background:var(--p1)"></div></div><span class="compare-val-mono">51</span></div></td>
+                <td><div class="compare-bar-wrap"><div class="compare-bar-track"><div class="compare-bar-fill" style="width:92%;background:var(--p4)"></div></div><span class="compare-val-mono">92</span></div></td>
+              </tr>
+              <tr>
+                <td class="compare-row-label">Sustainability</td>
+                <td><div class="compare-bar-wrap"><div class="compare-bar-track"><div class="compare-bar-fill" style="width:61%;background:var(--p1)"></div></div><span class="compare-val-mono">61</span></div></td>
+                <td><div class="compare-bar-wrap"><div class="compare-bar-track"><div class="compare-bar-fill" style="width:73%;background:var(--p4)"></div></div><span class="compare-val-mono">73</span></div></td>
+              </tr>
+              <tr class="compare-section-header"><td colspan="3">Funnel & Channel</td></tr>
+              <tr>
+                <td class="compare-row-label">Funnel Stage</td>
+                <td><div class="compare-cell-val">Research / Consideration</div><div class="compare-cell-sub">82% at stage 3</div></td>
+                <td><div class="compare-cell-val">Research</div><div class="compare-cell-sub">67% at stage 3</div></td>
+              </tr>
+              <tr>
+                <td class="compare-row-label">Primary Channel</td>
+                <td><div class="compare-cell-val">YouTube · Google Search</div><div class="compare-cell-sub">3.4× / 4.1× index</div></td>
+                <td><div class="compare-cell-val">Meta · Contextual Display</div><div class="compare-cell-sub">3.8× / 3.2× index</div></td>
+              </tr>
+              <tr>
+                <td class="compare-row-label">Creative Approach</td>
+                <td><div class="compare-cell-val">Performance-led, spec proof</div><div class="compare-cell-sub">Rational + aspirational</div></td>
+                <td><div class="compare-cell-val">Safety narrative, space</div><div class="compare-cell-sub">Emotional, family-centric</div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div><!-- /view-compare -->
+
+      <!-- ═══ DETAIL VIEW ═══ -->
+      <div id="view-detail">
+        <div class="detail-header">
+          <button class="detail-back" onclick="closeDetail()">← Back</button>
+          <div>
+            <div class="detail-name" id="detail-name">Ambitious Upgrader</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--muted);margin-top:2px" id="detail-archetype">Premium Auto · High Intent</div>
+          </div>
+          <div style="margin-left:auto">
+            <button class="btn-primary" id="detail-activate-btn">Activate Campaign →</button>
+          </div>
+        </div>
+        <div class="detail-body">
+          <div class="detail-kpi-row">
+            <div class="kpi-card">
+              <div class="kpi-label">Cohort Size</div>
+              <div class="kpi-val" id="d-size" style="color:var(--p1)">142K</div>
+              <div class="kpi-sub">Addressable reach</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Intent Index</div>
+              <div class="kpi-val" id="d-intent" style="color:var(--p1)">3.4×</div>
+              <div class="kpi-sub">vs category baseline</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Confidence</div>
+              <div class="kpi-val" id="d-conf">87%</div>
+              <div class="kpi-sub">Signal quality score</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Funnel Stage</div>
+              <div class="kpi-val" id="d-stage" style="font-size:16px;padding-top:4px">Research</div>
+              <div class="kpi-sub" id="d-stage-sub">Stage 3 of 5</div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-label">Top Category</div>
+              <div class="kpi-val" id="d-topcat" style="font-size:16px;padding-top:4px">Automotive</div>
+              <div class="kpi-sub" id="d-topcat-sub">IAB index: 94</div>
+            </div>
+          </div>
+
+          <div class="detail-2col">
+            <div class="detail-panel">
+              <div class="detail-panel-label">Channel Affinity Index</div>
+              <div class="channel-list">
+                <div class="channel-row">
+                  <div class="channel-name-cell">Google Search</div>
+                  <div class="channel-bar-track"><div class="channel-bar-fill" style="width:100%;background:var(--p1)"></div></div>
+                  <div class="channel-pct">4.1×</div>
+                </div>
+                <div class="channel-row">
+                  <div class="channel-name-cell">YouTube</div>
+                  <div class="channel-bar-track"><div class="channel-bar-fill" style="width:83%;background:var(--p1)"></div></div>
+                  <div class="channel-pct">3.4×</div>
+                </div>
+                <div class="channel-row">
+                  <div class="channel-name-cell">Contextual</div>
+                  <div class="channel-bar-track"><div class="channel-bar-fill" style="width:71%;background:var(--p1)"></div></div>
+                  <div class="channel-pct">2.9×</div>
+                </div>
+                <div class="channel-row">
+                  <div class="channel-name-cell">Meta</div>
+                  <div class="channel-bar-track"><div class="channel-bar-fill" style="width:76%;background:var(--p1)"></div></div>
+                  <div class="channel-pct">3.1×</div>
+                </div>
+                <div class="channel-row">
+                  <div class="channel-name-cell">TikTok</div>
+                  <div class="channel-bar-track"><div class="channel-bar-fill" style="width:44%;background:var(--muted2)"></div></div>
+                  <div class="channel-pct">1.8×</div>
+                </div>
+              </div>
+            </div>
+            <div class="detail-panel">
+              <div class="detail-panel-label">NLP Topic Signals</div>
+              <div class="topic-cloud">
+                <span class="topic-chip" style="background:rgba(249,115,22,0.12);border-color:rgba(249,115,22,0.3);color:var(--p1)">premium SUV comparison</span>
+                <span class="topic-chip" style="background:rgba(249,115,22,0.12);border-color:rgba(249,115,22,0.3);color:var(--p1)">PCP vs finance lease</span>
+                <span class="topic-chip" style="background:rgba(249,115,22,0.12);border-color:rgba(249,115,22,0.3);color:var(--p1)">EV range anxiety</span>
+                <span class="topic-chip" style="background:rgba(249,115,22,0.08);border-color:rgba(249,115,22,0.2);color:#d4631a">German marques</span>
+                <span class="topic-chip" style="background:rgba(249,115,22,0.08);border-color:rgba(249,115,22,0.2);color:#d4631a">performance spec sheets</span>
+                <span class="topic-chip" style="background:rgba(249,115,22,0.08);border-color:rgba(249,115,22,0.2);color:#d4631a">connected car tech</span>
+                <span class="topic-chip" style="border-color:var(--border2);color:var(--muted)">fuel cost calculators</span>
+                <span class="topic-chip" style="border-color:var(--border2);color:var(--muted)">road test reviews</span>
+                <span class="topic-chip" style="border-color:var(--border2);color:var(--muted)">depreciation</span>
+                <span class="topic-chip" style="border-color:var(--border2);color:var(--muted)">dealer locator</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:20px;margin-bottom:20px">
+            <div class="detail-panel-label">Activate This Persona</div>
+            <div class="activate-row">
+              <button class="activate-btn"><span>📘</span>Push to Meta</button>
+              <button class="activate-btn"><span>🔵</span>Push to Google</button>
+              <button class="activate-btn"><span>🎵</span>Push to TikTok</button>
+            </div>
+          </div>
+
+        </div>
+      </div><!-- /view-detail -->
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script>
+const personas = [
+  { name:'Ambitious Upgrader', archetype:'Premium Auto · High Intent', color:'var(--p1)', size:'142K', intent:'3.4×', conf:'87%', stage:'Research', stageSub:'Stage 3 of 5', topcat:'Automotive', topcatsub:'IAB index: 94' },
+  { name:'Digital Native', archetype:'EV · Tech Forward', color:'var(--p2)', size:'98K', intent:'2.8×', conf:'81%', stage:'Awareness', stageSub:'Stage 2 of 5', topcat:'Technology', topcatsub:'IAB index: 78' },
+  { name:'Conscious Consumer', archetype:'Hybrid · Value-led', color:'var(--p3)', size:'76K', intent:'2.2×', conf:'79%', stage:'Evaluation', stageSub:'Stage 4 of 5', topcat:'Finance', topcatsub:'IAB index: 71' },
+  { name:'Family Planner', archetype:'7-seat · Safety-led', color:'var(--p4)', size:'211K', intent:'3.1×', conf:'91%', stage:'Research', stageSub:'Stage 3 of 5', topcat:'Automotive', topcatsub:'IAB index: 88' },
+  { name:'Urban Explorer', archetype:'City car · Style-led', color:'var(--p5)', size:'63K', intent:'2.1×', conf:'76%', stage:'Awareness', stageSub:'Stage 2 of 5', topcat:'Lifestyle', topcatsub:'IAB index: 62' },
+];
+
+function showView(view, btn) {
+  ['portfolio','compare','detail'].forEach(v => {
+    document.getElementById('view-'+v).style.display = 'none';
+  });
+  document.getElementById('view-'+view).style.display = 'block';
+  document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+}
+
+function openDetail(idx) {
+  const p = personas[idx];
+  document.getElementById('detail-name').textContent = p.name;
+  document.getElementById('detail-archetype').textContent = p.archetype;
+  document.getElementById('d-size').textContent = p.size;
+  document.getElementById('d-size').style.color = p.color;
+  document.getElementById('d-intent').textContent = p.intent;
+  document.getElementById('d-intent').style.color = p.color;
+  document.getElementById('d-conf').textContent = p.conf;
+  document.getElementById('d-stage').textContent = p.stage;
+  document.getElementById('d-stage-sub').textContent = p.stageSub;
+  document.getElementById('d-topcat').textContent = p.topcat;
+  document.getElementById('d-topcat-sub').textContent = p.topcatsub;
+
+  showView('detail', null);
+  document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+
+  // Highlight sidebar
+  document.querySelectorAll('.persona-item').forEach((el,i) => {
+    el.classList.toggle('active', i === idx);
+  });
+}
+
+function closeDetail() {
+  showView('portfolio', document.querySelector('.view-btn'));
+  document.querySelector('.view-btn').classList.add('active');
+}
+
+function toggleChip(el, id) {
+  el.classList.toggle('selected');
+  const isSelected = el.classList.contains('selected');
+  const color = getComputedStyle(document.documentElement).getPropertyValue('--'+id).trim();
+  if (isSelected) {
+    el.style.borderColor = color;
+    el.style.color = color;
+  } else {
+    el.style.borderColor = 'var(--border2)';
+    el.style.color = 'var(--muted)';
+  }
+}
+
+// Init
+showView('portfolio', document.querySelector('.view-btn'));
+</script>
+</body>
+</html>
