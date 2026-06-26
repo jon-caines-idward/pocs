@@ -508,7 +508,8 @@
 //  CONFIG — set token here to skip the input prompt
 // ═══════════════════════════════════════════════════════
 var SYSTEM_TOKEN = ''; // populate when hosting locally
-var API = 'https://meta-proxy.jonathan-1be.workers.dev/api/v25.0'; // populate when hosting on Github
+var API          = 'https://graph.facebook.com/v25.0'; // populate when hosting locally
+var API          = 'https://meta-proxy.jonathan-1be.workers.dev/api/v25.0'; // populate when hosting on Github
   
 // ═══════════════════════════════════════════════════════
 //  STATE
@@ -517,7 +518,6 @@ var allAudiences      = [];
 var filteredAudiences = [];
 var allAccounts       = [];
 var cursors           = { before: null, after: null };
-var API               = 'https://graph.facebook.com/v25.0';
 
 // Fields for the list — deliberately excludes rule/lookalike_spec (fetched on demand)
 var LIST_FIELDS = [
