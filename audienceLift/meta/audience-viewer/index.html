@@ -1143,10 +1143,11 @@ document.addEventListener('keydown', function(e) {
   if (e.key === 'Enter' && e.target.id === 'access-token') loadAccounts();
 });
 
-// If token is pre-set, hide the input/button and load immediately
+// Hide token input and auto-load if a token is hardcoded OR a proxy is configured
 window.addEventListener('DOMContentLoaded', function() {
-  if (SYSTEM_TOKEN) {
-    document.getElementById('access-token').style.display   = 'none';
+  var usingProxy = API.indexOf('graph.facebook.com') === -1;
+  if (SYSTEM_TOKEN || usingProxy) {
+    document.getElementById('access-token').style.display      = 'none';
     document.getElementById('load-accounts-btn').style.display = 'none';
     loadAccounts();
   }
