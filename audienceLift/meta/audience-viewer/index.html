@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Meta Custom Audiences</title>
+  <title>Meta Custom Audiences Viewer</title>
   <style>
     /* ── Anonymised brand tokens ── */
     :root {
@@ -966,8 +965,16 @@ function selectLookalike(id) {
   var seedAudience = lookalikeSeedMap[id];
   if (!la) return;
 
-  // Clear list selection — lookalike may not be in the visible list
   document.querySelectorAll('.audience-item').forEach(function(el) { el.classList.remove('active'); });
+
+  // Highlight in list if the lookalike is on the current page
+  for (var j = 0; j < filteredAudiences.length; j++) {
+    if (filteredAudiences[j].id === la.id) {
+      var listEl = document.querySelector('[data-index="' + j + '"]');
+      if (listEl) { listEl.classList.add('active'); listEl.scrollIntoView({ block: 'nearest' }); }
+      break;
+    }
+  }
 
   renderDetail(la, seedAudience);
 
@@ -1000,6 +1007,7 @@ function goBackToSeed(seedId) {
   var url = API + '/' + seedId + '?fields=' + encodeURIComponent(LIST_FIELDS) + tokenParam();
   apiFetch(url).then(function(seed) {
     document.querySelectorAll('.audience-item').forEach(function(el) { el.classList.remove('active'); });
+    // Seed is not on current page — no list item to highlight
     renderDetail(seed, null);
     var detailUrl = API + '/' + seed.id + '?fields=' + encodeURIComponent(DETAIL_FIELDS) + tokenParam();
     document.getElementById('detail-rule-area').innerHTML =
