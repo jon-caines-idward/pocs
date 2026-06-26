@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meta Custom Audiences</title>
+  <style>
+    /* ── Anonymised brand tokens ── */
+    :root {
+      --black:      #171717;
+      --white:      #FFFFFC;
+      --teal:       #01F5D4;
+      --teal-tint:  #00BDA4;
+      --surface:    #1e1e1e;
+      --surface-2:  #252525;
+      --surface-3:  #2e2e2e;
+      --border:     #333;
+      --muted:      #888;
+      --danger:     #e74c3c;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Graphik", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px;
+      background: var(--black);
+      color: var(--white);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+    .topbar h1 {
+      font-size: 15px;
+      font-weight: 700;
+      white-space: nowrap;
+      color: var(--teal);
+      letter-spacing: 0.02em;
+    }
+
+    .topbar input[type="password"] {
+      flex: 1;
+      min-width: 200px;
+      max-width: 340px;
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 13px;
+      background: var(--surface-3);
+      color: var(--white);
+    }
+    .topbar input::placeholder { color: var(--muted); }
+    .topbar input:focus { outline: none; border-color: var(--teal); }
+
+    .topbar button {
+      padding: 6px 16px;
+      background: var(--teal);
+      color: var(--black);
+      border: none;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      letter-spacing: 0.02em;
+    }
+    .topbar button:hover { background: var(--teal-tint); }
+    .topbar button:disabled { opacity: 0.4; cursor: default; }
+
+    .topbar-error {
+      font-size: 12px;
+      color: var(--danger);
+      width: 100%;
+      padding-bottom: 4px;
+    }
+
+    /* ── Account bar ── */
+    .account-bar {
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--border);
+      padding: 8px 20px;
+      display: none;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+    .account-bar.visible { display: flex; }
+
+    .account-bar label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .account-bar select {
+      flex: 1;
+      max-width: 440px;
+      padding: 5px 9px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 13px;
+      background: var(--surface-3);
+      color: var(--white);
+      cursor: pointer;
+    }
+    .account-bar select option { background: var(--surface-2); color: var(--white); }
+    .account-bar select:focus { outline: none; border-color: var(--teal); }
+
+    .account-meta {
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    /* ── Main layout ── */
+    .main { display: flex; flex: 1; overflow: hidden; }
+
+    /* ── Audience list panel ── */
+    .list-panel {
+      width: 340px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .list-header {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .list-header h2 { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
+    .list-count { font-size: 12px; color: var(--teal); font-weight: 600; }
+
+    .list-filter-bar {
+      padding: 6px 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+      background: var(--surface-2);
+    }
+    .toggle-btn {
+      padding: 3px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .toggle-btn.active {
+      background: var(--teal);
+      color: var(--black);
+      border-color: var(--teal);
+    }
+    .toggle-btn:not(.active):hover { border-color: var(--teal); color: var(--teal); }
+
+    .list-search {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      background: var(--surface-2);
+    }
+    .list-search input {
+      width: 100%;
+      padding: 5px 9px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 12px;
+      background: var(--surface-3);
+      color: var(--white);
+    }
+    .list-search input::placeholder { color: var(--muted); }
+    .list-search input:focus { outline: none; border-color: var(--teal); }
+
+    .list-body { flex: 1; overflow-y: auto; }
+    .list-body::-webkit-scrollbar { width: 4px; }
+    .list-body::-webkit-scrollbar-track { background: var(--surface); }
+    .list-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .audience-item {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.1s;
+      border-left: 3px solid transparent;
+    }
+    .audience-item:hover { background: var(--surface-2); }
+    .audience-item.active { background: var(--surface-2); border-left-color: var(--teal); }
+
+    .audience-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--white);
+      margin-bottom: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .audience-meta-row {
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .audience-meta-row span { white-space: nowrap; }
+
+    .status-dot {
+      display: inline-block;
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      margin-right: 3px;
+      vertical-align: middle;
+    }
+    .dot-active   { background: var(--teal); }
+    .dot-inactive { background: var(--danger); }
+
+    .list-group-header {
+      padding: 6px 14px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--black);
+      background: var(--teal);
+      border-bottom: 1px solid var(--teal-tint);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    .list-group-header.other {
+      background: var(--surface-3);
+      color: var(--muted);
+      border-bottom-color: var(--border);
+    }
+
+    .empty-state {
+      padding: 32px 16px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .spinner { display: none; padding: 24px; text-align: center; color: var(--teal); font-size: 13px; }
+    .spinner.visible { display: block; }
+
+    .pagination {
+      padding: 10px 14px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+      background: var(--surface-2);
+    }
+    .pagination button {
+      flex: 1;
+      padding: 6px 10px;
+      background: transparent;
+      color: var(--teal);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .pagination button:hover { border-color: var(--teal); background: rgba(1,245,212,0.07); }
+    .pagination button:disabled { opacity: 0.3; cursor: default; }
+
+    /* ── Detail panel ── */
+    .detail-panel {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      background: var(--black);
+    }
+    .detail-panel::-webkit-scrollbar { width: 4px; }
+    .detail-panel::-webkit-scrollbar-track { background: var(--black); }
+    .detail-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .detail-placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .detail-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; color: var(--white); }
+    .detail-id { font-size: 12px; color: var(--muted); margin-bottom: 16px; }
+
+    .stat-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 16px;
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .stat-card strong { display: block; font-size: 14px; color: var(--white); margin-bottom: 3px; text-transform: none; letter-spacing: 0; }
+
+    .detail-description {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 14px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .section-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    /* ── Rule renderer ── */
+    .section {
+      background: var(--surface);
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      margin-bottom: 14px;
+      overflow: hidden;
+    }
+    .section-header {
+      padding: 9px 14px;
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .section-header.include {
+      background: rgba(1,245,212,0.12);
+      color: var(--teal);
+      border-bottom: 1px solid rgba(1,245,212,0.2);
+    }
+    .section-header.exclude {
+      background: rgba(231,76,60,0.12);
+      color: #f87171;
+      border-bottom: 1px solid rgba(231,76,60,0.2);
+    }
+    .section-body { padding: 12px 14px; }
+
+    .top-operator {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      padding: 2px 8px;
+      border-radius: 3px;
+      margin-bottom: 12px;
+    }
+    .op-or  { background: rgba(253,89,1,0.15); color: #FD5901; border: 1px solid rgba(253,89,1,0.3); }
+    .op-and { background: rgba(1,245,212,0.12); color: var(--teal); border: 1px solid rgba(1,245,212,0.25); }
+
+    .rule {
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 12px;
+      margin-bottom: 10px;
+      background: var(--surface-2);
+    }
+    .rule:last-child { margin-bottom: 0; }
+
+    .rule-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .rule-number {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: var(--teal);
+      color: var(--black);
+      font-size: 11px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .rule-title { font-weight: 600; font-size: 13px; color: var(--white); }
+
+    .meta-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 9px; border-radius: 3px; font-size: 11px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .badge-source { background: rgba(1,245,212,0.1);  color: var(--teal);  border: 1px solid rgba(1,245,212,0.25); }
+    .badge-event  { background: rgba(253,89,1,0.1);   color: #FD5901;      border: 1px solid rgba(253,89,1,0.25); }
+    .badge-retain { background: rgba(255,255,252,0.07); color: var(--muted); border: 1px solid var(--border); }
+
+    .filter-tree { margin-top: 8px; border-left: 2px solid var(--teal-tint); padding-left: 10px; }
+    .filter-group { margin: 4px 0; }
+    .filter-group-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 1px 6px; border-radius: 3px; display: inline-block; margin-bottom: 4px;
+    }
+    .filter-leaf {
+      font-size: 12px; color: #bbb;
+      padding: 4px 0 4px 10px;
+      border-left: 2px solid var(--border);
+      margin: 2px 0;
+    }
+    .filter-leaf strong { color: var(--white); }
+    .filter-leaf code {
+      font-family: "SF Mono", "Fira Code", monospace;
+      background: var(--surface-3);
+      color: var(--teal);
+      padding: 1px 6px; border-radius: 3px; font-size: 11px;
+      border: 1px solid var(--border);
+    }
+    .rule-divider {
+      text-align: center; font-size: 10px; font-weight: 700;
+      letter-spacing: 0.1em; color: var(--muted); margin: 6px 0;
+      text-transform: uppercase;
+    }
+    .no-rule {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Step 1: Token -->
+<div class="topbar">
+  <h1>&#128101; Meta Audiences</h1>
+  <input type="password" id="access-token" placeholder="System access token" />
+  <button id="load-accounts-btn" onclick="loadAccounts()">Load Accounts</button>
+  <div class="topbar-error" id="api-error"></div>
+</div>
+
+<!-- Step 2: Account selector (appears after accounts load) -->
+<div class="account-bar" id="account-bar">
+  <label for="account-select">Ad Account</label>
+  <select id="account-select" onchange="onAccountChange()">
+    <option value="">— select an account —</option>
+  </select>
+  <span class="account-meta" id="account-meta"></span>
+</div>
+
+<!-- Main -->
+<div class="main">
+
+  <!-- Audience list -->
+  <div class="list-panel">
+    <div class="list-header">
+      <h2>Custom Audiences</h2>
+      <span class="list-count" id="list-count"></span>
+    </div>
+    <div class="list-filter-bar" id="list-filter-bar" style="display:none">
+      <button class="toggle-btn active" id="toggle-all"  onclick="setAnonFilter(false)">All</button>
+      <button class="toggle-btn"        id="toggle-anon" onclick="setAnonFilter(true)">Anonymised only</button>
+    </div>
+    <div class="list-search">
+      <input id="list-filter" type="text" placeholder="Filter by name…" oninput="filterList()" disabled>
+    </div>
+    <div class="spinner" id="list-spinner">Loading…</div>
+    <div class="list-body" id="list-body">
+      <div class="empty-state">Load accounts above to get started.</div>
+    </div>
+    <div class="pagination" id="pagination" style="display:none">
+      <button id="prev-btn" onclick="paginate('prev')" disabled>&#8592; Prev</button>
+      <button id="next-btn" onclick="paginate('next')" disabled>Next &#8594;</button>
+    </div>
+  </div>
+
+  <!-- Detail -->
+  <div class="detail-panel" id="detail-panel">
+    <div class="detail-placeholder">Select an account, then click an audience to view its criteria.</div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  CONFIG — set token here to skip the input prompt
+// ═══════════════════════════════════════════════════════
+var SYSTEM_TOKEN = ''; // populate with system token when hosted locally
+var API = 'https://meta-proxy.jonathan-1be.workers.dev/api/v25.0'; // populate when hosting publicly on github 
+  
+// ═══════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════
+var allAudiences      = [];
+var filteredAudiences = [];
+var allAccounts       = [];
+var cursors           = { before: null, after: null };
+var API               = 'https://graph.facebook.com/v25.0';
+
+// Fields for the list — deliberately excludes rule/lookalike_spec (fetched on demand)
+var LIST_FIELDS = [
+  'account_id','id','name','description','delivery_status','operation_status',
+  'data_source','is_value_based','retention_days','sharing_status',
+  'approximate_count_lower_bound','approximate_count_upper_bound',
+  'time_created','time_updated','time_content_updated'
+].join(',');
+
+// Fields fetched when a user clicks an audience
+var DETAIL_FIELDS = 'rule,lookalike_spec,lookalike_audience_ids';
+
+// Whether to filter to anon audiences only
+var anonOnly = false;
+
+var ACCOUNT_STATUS_LABELS = {
+  1: 'Active', 2: 'Disabled', 3: 'Unsettled',
+  7: 'Pending review', 8: 'Pending settlement',
+  9: 'In grace period', 100: 'Pending closure', 101: 'Closed'
+};
+
+// ═══════════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════════
+function token() { return SYSTEM_TOKEN || document.getElementById('access-token').value.trim(); }
+function setError(msg) {
+  var el = document.getElementById('api-error');
+  el.textContent = msg;
+}
+
+function apiFetch(url) {
+  return fetch(url)
+    .then(function(r) { return r.json(); })
+    .then(function(json) {
+      if (json.error) throw new Error(json.error.message || 'API error');
+      return json;
+    });
+}
+
+// ═══════════════════════════════════════════════════════
+//  STEP 1 — LOAD AD ACCOUNTS
+// ═══════════════════════════════════════════════════════
+function loadAccounts() {
+  if (!token()) { setError('Enter a system access token first.'); return; }
+  setError('');
+
+  var btn = document.getElementById('load-accounts-btn');
+  btn.disabled = true;
+  btn.textContent = 'Loading…';
+
+  var url = API + '/me/adaccounts'
+    + '?fields=id,name,account_status,currency,timezone_name'
+    + '&limit=200'
+    + '&access_token=' + encodeURIComponent(token());
+
+  apiFetch(url)
+    .then(function(json) {
+      btn.disabled    = false;
+      btn.textContent = 'Load Accounts';
+      allAccounts     = json.data || [];
+
+      if (!allAccounts.length) {
+        setError('No ad accounts found for this token.');
+        return;
+      }
+
+      populateAccountSelector(allAccounts);
+      document.getElementById('account-bar').classList.add('visible');
+    })
+    .catch(function(err) {
+      btn.disabled    = false;
+      btn.textContent = 'Load Accounts';
+      setError('Error: ' + err.message);
+    });
+}
+
+function populateAccountSelector(accounts) {
+  var sel = document.getElementById('account-select');
+  sel.innerHTML = '<option value="">— select an account —</option>';
+
+  accounts.forEach(function(a) {
+    var statusLabel = ACCOUNT_STATUS_LABELS[a.account_status] || ('Status ' + a.account_status);
+    var opt = document.createElement('option');
+    opt.value       = a.id;
+    opt.textContent = a.name + ' (' + a.id + ')  ·  ' + statusLabel;
+    opt.dataset.currency = a.currency || '';
+    opt.dataset.timezone = a.timezone_name || '';
+    opt.dataset.status   = statusLabel;
+    sel.appendChild(opt);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  STEP 2 — SELECT ACCOUNT → LOAD AUDIENCES
+// ═══════════════════════════════════════════════════════
+function onAccountChange() {
+  var sel       = document.getElementById('account-select');
+  var accountId = sel.value;
+  if (!accountId) return;
+
+  var opt = sel.options[sel.selectedIndex];
+  var metaParts = [];
+  if (opt.dataset.currency) metaParts.push(opt.dataset.currency);
+  if (opt.dataset.timezone) metaParts.push(opt.dataset.timezone);
+  if (opt.dataset.status)   metaParts.push(opt.dataset.status);
+  document.getElementById('account-meta').textContent = metaParts.join('  ·  ');
+
+  // Reset detail panel
+  document.getElementById('detail-panel').innerHTML =
+    '<div class="detail-placeholder">Click an audience to view its criteria.</div>';
+
+  fetchAudiences(accountId, null);
+}
+
+function fetchAudiences(accountId, cursor) {
+  var spinner  = document.getElementById('list-spinner');
+  var listBody = document.getElementById('list-body');
+  setError('');
+
+  spinner.classList.add('visible');
+  listBody.innerHTML = '';
+  document.getElementById('list-count').textContent = '';
+  document.getElementById('list-filter').disabled   = true;
+  document.getElementById('pagination').style.display = 'none';
+
+  var url = API + '/' + accountId + '/customaudiences'
+    + '?fields=' + encodeURIComponent(LIST_FIELDS)
+    + '&limit=50'
+    + (anonOnly ? '&filtering=' + encodeURIComponent(JSON.stringify([{field:'name',operator:'CONTAIN',value:'anon'}])) : '')
+    + '&access_token=' + encodeURIComponent(token());
+
+  if (cursor) url += '&' + cursor;
+
+  apiFetch(url)
+    .then(function(json) {
+      spinner.classList.remove('visible');
+      allAudiences      = json.data || [];
+      filteredAudiences = allAudiences.slice();
+
+      var paging = json.paging || {};
+      cursors.before = paging.previous ? 'before=' + paging.cursors.before : null;
+      cursors.after  = paging.next     ? 'after='  + paging.cursors.after  : null;
+
+      if (cursors.before || cursors.after) {
+        document.getElementById('pagination').style.display = 'flex';
+        document.getElementById('prev-btn').disabled = !cursors.before;
+        document.getElementById('next-btn').disabled = !cursors.after;
+      }
+
+      document.getElementById('list-filter').disabled = false;
+      document.getElementById('list-filter-bar').style.display = 'flex';
+      renderList(filteredAudiences);
+    })
+    .catch(function(err) {
+      spinner.classList.remove('visible');
+      setError('Error loading audiences: ' + err.message);
+      listBody.innerHTML = '<div class="empty-state">Could not load audiences.</div>';
+    });
+}
+
+function paginate(dir) {
+  var sel = document.getElementById('account-select');
+  var id  = sel.value;
+  if (!id) return;
+  var cursor = dir === 'next' ? cursors.after : cursors.before;
+  if (cursor) fetchAudiences(id, cursor);
+}
+
+// ═══════════════════════════════════════════════════════
+//  LIST
+// ═══════════════════════════════════════════════════════
+function isAnon(a) {
+  return a.name.toLowerCase().indexOf('anon') !== -1;
+}
+
+function audienceItemHtml(a, i) {
+  var isActive    = a.delivery_status && a.delivery_status.code === 200;
+  var dotClass    = isActive ? 'dot-active' : 'dot-inactive';
+  var statusLabel = a.delivery_status ? a.delivery_status.description : 'Unknown';
+
+  var lower = a.approximate_count_lower_bound;
+  var upper = a.approximate_count_upper_bound;
+  var sizeStr = '';
+  if (lower != null && upper != null) {
+    sizeStr = lower < 1000 && upper < 1000 ? '&lt;1K' : formatCount(lower) + '–' + formatCount(upper);
+  }
+
+  var updated = a.time_content_updated
+    ? new Date(a.time_content_updated * 1000).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })
+    : '';
+
+  return '<div class="audience-item" data-index="' + i + '" onclick="selectAudience(' + i + ')">'
+    + '<div class="audience-name">' + escHtml(a.name) + '</div>'
+    + '<div class="audience-meta-row">'
+    + '<span><span class="status-dot ' + dotClass + '"></span>' + escHtml(statusLabel) + '</span>'
+    + (sizeStr ? '<span>&#128101; ' + sizeStr + '</span>' : '')
+    + (updated ? '<span>&#128197; ' + updated + '</span>' : '')
+    + '</div></div>';
+}
+
+function renderList(audiences) {
+  var listBody = document.getElementById('list-body');
+  document.getElementById('list-count').textContent =
+    audiences.length + ' audience' + (audiences.length !== 1 ? 's' : '');
+
+  if (!audiences.length) {
+    listBody.innerHTML = '<div class="empty-state">No audiences found.</div>';
+    return;
+  }
+
+  // Split into Anonymised (anon) and all others, preserving original index for selectAudience
+  var anonGroup  = [];
+  var otherGroup = [];
+  audiences.forEach(function(a, i) {
+    if (isAnon(a)) { anonGroup.push({ a: a, i: i }); }
+    else           { otherGroup.push({ a: a, i: i }); }
+  });
+
+  var html = '';
+
+  if (anonGroup.length) {
+    html += '<div class="list-group-header">Anonymised (' + anonGroup.length + ')</div>';
+    html += anonGroup.map(function(x) { return audienceItemHtml(x.a, x.i); }).join('');
+  }
+
+  if (otherGroup.length) {
+    html += '<div class="list-group-header other">Other (' + otherGroup.length + ')</div>';
+    html += otherGroup.map(function(x) { return audienceItemHtml(x.a, x.i); }).join('');
+  }
+
+  listBody.innerHTML = html;
+}
+
+function filterList() {
+  var q = document.getElementById('list-filter').value.toLowerCase();
+  filteredAudiences = allAudiences.filter(function(a) {
+    return a.name.toLowerCase().indexOf(q) !== -1;
+  });
+  renderList(filteredAudiences);
+}
+
+function setAnonFilter(anon) {
+  anonOnly = anon;
+  document.getElementById('toggle-all').classList.toggle('active', !anon);
+  document.getElementById('toggle-anon').classList.toggle('active', anon);
+  var sel = document.getElementById('account-select');
+  if (sel.value) fetchAudiences(sel.value, null);
+}
+
+function selectAudience(index) {
+  document.querySelectorAll('.audience-item').forEach(function(el) { el.classList.remove('active'); });
+  var el = document.querySelector('[data-index="' + index + '"]');
+  if (el) el.classList.add('active');
+
+  var a = filteredAudiences[index];
+
+  // Show metadata immediately while rule loads
+  renderDetail(a, null);
+
+  // Fetch rule on demand
+  var url = API + '/' + a.id
+    + '?fields=' + encodeURIComponent(DETAIL_FIELDS)
+    + '&access_token=' + encodeURIComponent(token());
+
+  document.getElementById('detail-rule-area').innerHTML =
+    '<div class="no-rule" style="color:#888">Loading criteria…</div>';
+
+  apiFetch(url)
+    .then(function(json) {
+      document.getElementById('detail-rule-area').innerHTML = renderAudienceRule(json.rule, json.lookalike_spec);
+    })
+    .catch(function(err) {
+      document.getElementById('detail-rule-area').innerHTML =
+        '<div class="no-rule">Could not load criteria: ' + escHtml(err.message) + '</div>';
+    });
+}
+
+// ═══════════════════════════════════════════════════════
+//  DETAIL
+// ═══════════════════════════════════════════════════════
+function renderDetail(a) {
+  var lower = a.approximate_count_lower_bound;
+  var upper = a.approximate_count_upper_bound;
+  var sizeStr = (lower != null && upper != null)
+    ? formatCount(lower) + ' – ' + formatCount(upper) : 'Unknown';
+
+  var created = a.time_created
+    ? new Date(a.time_created * 1000).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '—';
+  var updated = a.time_content_updated
+    ? new Date(a.time_content_updated * 1000).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '—';
+
+  var dataSourceLabel = a.data_source
+    ? (a.data_source.sub_type || a.data_source.type || JSON.stringify(a.data_source)) : '—';
+
+  var deliveryLabel  = a.delivery_status ? a.delivery_status.description : '—';
+  var deliveryColour = (a.delivery_status && a.delivery_status.code === 200) ? '#27ae60' : '#e74c3c';
+
+  var html = '<div class="detail-title">' + escHtml(a.name) + '</div>'
+    + '<div class="detail-id">ID: ' + escHtml(a.id) + '&nbsp;·&nbsp;Account: ' + escHtml(a.account_id || '') + '</div>';
+
+  if (a.description) {
+    html += '<div class="detail-description">' + escHtml(a.description) + '</div>';
+  }
+
+  html += '<div class="stat-row">'
+    + statCard('Size (est.)', sizeStr)
+    + statCard('Delivery', '<span style="color:' + deliveryColour + '">' + escHtml(deliveryLabel) + '</span>')
+    + statCard('Source', escHtml(dataSourceLabel))
+    + statCard('Retention', a.retention_days ? a.retention_days + ' days' : '—')
+    + statCard('Created', created)
+    + statCard('Updated', updated)
+    + '</div>';
+
+  html += '<div class="section-label">Audience Criteria</div>';
+  html += '<div id="detail-rule-area"></div>';
+
+  document.getElementById('detail-panel').innerHTML = html;
+}
+
+function statCard(label, value) {
+  return '<div class="stat-card"><strong>' + value + '</strong>' + escHtml(label) + '</div>';
+}
+
+// ═══════════════════════════════════════════════════════
+//  RULE → CRITERIA RENDERER
+// ═══════════════════════════════════════════════════════
+function renderAudienceRule(rule, lookalikeSpec) {
+  if (!rule) {
+    if (lookalikeSpec) {
+      var src = lookalikeSpec.origin ? lookalikeSpec.origin.map(function(o){ return o.name || o.id; }).join(', ') : '—';
+      var ratio = lookalikeSpec.ratio ? Math.round(lookalikeSpec.ratio * 100) + '%' : '—';
+      var country = lookalikeSpec.country || '—';
+      return '<div class="no-rule">'
+        + '<strong>Lookalike audience</strong><br>'
+        + 'Source: ' + escHtml(src) + '&nbsp;·&nbsp;'
+        + 'Country: ' + escHtml(country) + '&nbsp;·&nbsp;'
+        + 'Size: ' + escHtml(ratio)
+        + '</div>';
+    }
+    return '<div class="no-rule">No rule defined — this may be a list upload or engagement audience.</div>';
+  }
+  var data = rule;
+  if (typeof data === 'string') { try { data = JSON.parse(data); } catch(e) {} }
+  if (typeof data === 'string') { try { data = JSON.parse(data); } catch(e) {
+    return '<div class="no-rule">Could not parse rule JSON: ' + escHtml(e.message) + '</div>';
+  }}
+
+  var html = '';
+  if (data.inclusions) html += renderSection('inclusions', data.inclusions);
+  if (data.exclusions) html += renderSection('exclusions', data.exclusions);
+  if (!html) {
+    html = '<div class="no-rule"><pre style="font-size:11px;overflow:auto;white-space:pre-wrap">'
+      + escHtml(JSON.stringify(data, null, 2)) + '</pre></div>';
+  }
+  return html;
+}
+
+function renderSection(key, data) {
+  var isInclude = key === 'inclusions';
+  var label     = isInclude ? '&#10003; Include' : '&#10007; Exclude';
+  var cls       = isInclude ? 'include' : 'exclude';
+  var rules     = data.rules || [];
+  var op        = data.operator || 'or';
+
+  var rulesHtml = '';
+  rules.forEach(function(r, i) {
+    rulesHtml += renderRule(r, i);
+    if (i < rules.length - 1) {
+      rulesHtml += '<div class="rule-divider">' + op.toUpperCase() + ' — match any rule above or below</div>';
+    }
+  });
+
+  return '<div class="section">'
+    + '<div class="section-header ' + cls + '">' + label + '</div>'
+    + '<div class="section-body">'
+    + (rules.length > 1 ? '<span class="top-operator ' + (op === 'or' ? 'op-or' : 'op-and') + '">'
+        + op.toUpperCase() + ' — match any of these rules</span>' : '')
+    + (rulesHtml || '<p style="color:#888;font-size:13px">No rules.</p>')
+    + '</div></div>';
+}
+
+function renderRule(rule, index) {
+  var eventName = extractEventName(rule.filter);
+  var retention = rule.retention_seconds ? humanSeconds(rule.retention_seconds) : null;
+  return '<div class="rule">'
+    + '<div class="rule-header"><div class="rule-number">' + (index + 1) + '</div>'
+    + '<div class="rule-title">' + (eventName || 'Rule ' + (index + 1)) + '</div></div>'
+    + '<div class="meta-row">'
+    + renderSources(rule.event_sources)
+    + (eventName ? '<span class="badge badge-event">&#9889; ' + eventName + '</span>' : '')
+    + (retention ? '<span class="badge badge-retain">&#8987; ' + retention + ' lookback</span>' : '')
+    + '</div>'
+    + renderFilter(rule.filter)
+    + '</div>';
+}
+
+function renderFilter(filter, depth) {
+  depth = depth || 0;
+  if (!filter) return '';
+  if (filter.field) {
+    return '<div class="filter-leaf"><strong>' + humanField(filter.field) + '</strong> '
+      + humanOperator(filter.operator) + ' <code>' + escHtml(String(filter.value)) + '</code></div>';
+  }
+  if (filter.operator && Array.isArray(filter.filters)) {
+    var op = filter.operator.toUpperCase();
+    var cls = filter.operator === 'or' ? 'op-or' : 'op-and';
+    var kids = '';
+    filter.filters.forEach(function(f, i) {
+      kids += renderFilter(f, depth + 1);
+      if (i < filter.filters.length - 1) kids += '<div class="rule-divider">' + op + '</div>';
+    });
+    if (depth === 0) return '<div class="filter-tree">' + kids + '</div>';
+    return '<div class="filter-group"><span class="filter-group-label ' + cls + '">' + op + '</span>'
+      + '<div class="filter-tree">' + kids + '</div></div>';
+  }
+  return '';
+}
+
+function renderSources(sources) {
+  return (sources || []).map(function(s) {
+    var label = s.type === 'pixel'
+      ? 'Pixel <strong>' + s.id + '</strong>'
+      : escHtml(s.type) + ' <strong>' + s.id + '</strong>';
+    return '<span class="badge badge-source">&#128225; ' + label + '</span>';
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+//  UTILITIES
+// ═══════════════════════════════════════════════════════
+var OPERATORS = {
+  eq:'equals', neq:'does not equal', lt:'less than', lte:'less than or equal to',
+  gt:'greater than', gte:'greater than or equal to',
+  contains:'contains', i_contains:'contains', not_contains:'does not contain',
+  starts_with:'starts with', ends_with:'ends with',
+  is_any:'is any of', is_not_any:'is not any of',
+};
+function humanOperator(op) { return OPERATORS[op] || op; }
+
+var FIELD_LABELS = {
+  event:'Event', content_ids:'Content IDs', url:'URL', referrer:'Referrer',
+  value:'Value', currency:'Currency', device_type:'Device type',
+};
+function humanField(f) { return FIELD_LABELS[f] || f; }
+
+function humanSeconds(s) {
+  var d = Math.round(s / 86400);
+  if (d === 1) return '1 day';
+  if (d < 7)   return d + ' days';
+  if (d % 30 === 0) return (d/30) + ' month' + (d/30 > 1 ? 's' : '');
+  if (d % 7  === 0) return (d/7)  + ' week'  + (d/7  > 1 ? 's' : '');
+  return d + ' days';
+}
+
+function extractEventName(filter) {
+  if (!filter) return null;
+  if (filter.field === 'event' && filter.operator === 'eq') return filter.value;
+  if (Array.isArray(filter.filters)) {
+    for (var i = 0; i < filter.filters.length; i++) {
+      var found = extractEventName(filter.filters[i]);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+function formatCount(n) {
+  if (n >= 1000000) return (n/1000000).toFixed(1).replace(/\.0$/,'') + 'M';
+  if (n >= 1000)    return Math.round(n/1000) + 'K';
+  return String(n);
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && e.target.id === 'access-token') loadAccounts();
+});
+
+// If token is pre-set, hide the input/button and load immediately
+window.addEventListener('DOMContentLoaded', function() {
+  if (SYSTEM_TOKEN) {
+    document.getElementById('access-token').style.display   = 'none';
+    document.getElementById('load-accounts-btn').style.display = 'none';
+    loadAccounts();
+  }
+});
+</script>
+</body>
+</html>
