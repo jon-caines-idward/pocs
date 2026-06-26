@@ -1,8 +1,10 @@
+
 <!DOCTYPE html>
-<html lang="en"><head>
+<html lang="en">
+<head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Meta Custom Audience Viewer</title>
+  <title>Meta Custom Audiences</title>
   <style>
     /* ── Anonymised brand tokens ── */
     :root {
@@ -144,15 +146,59 @@
     }
 
     .list-header {
-      padding: 12px 14px;
+      padding: 10px 14px;
       border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: space-between;
       flex-shrink: 0;
+      gap: 8px;
     }
-    .list-header h2 { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
-    .list-count { font-size: 12px; color: var(--teal); font-weight: 600; }
+    .list-header h2 { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); flex-shrink: 0; }
+    .list-count { font-size: 12px; color: var(--teal); font-weight: 600; flex-shrink: 0; }
+
+    .sort-controls { display: flex; gap: 4px; margin-left: auto; }
+    .sort-btn {
+      padding: 2px 8px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .sort-btn.active { border-color: var(--teal); color: var(--teal); }
+    .sort-btn:not(.active):hover { border-color: var(--muted); }
+
+    /* ── Lookalike section ── */
+    .lookalike-section { margin-top: 20px; }
+    .lookalike-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .lookalike-card:last-child { margin-bottom: 0; }
+    .lookalike-icon {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: rgba(1,245,212,0.12);
+      border: 1px solid rgba(1,245,212,0.25);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .lookalike-info { flex: 1; min-width: 0; }
+    .lookalike-name { font-size: 13px; font-weight: 500; color: var(--white); margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .lookalike-meta { font-size: 11px; color: var(--muted); display: flex; gap: 8px; flex-wrap: wrap; }
+    .lookalike-meta span { white-space: nowrap; }
 
     .list-filter-bar {
       padding: 6px 12px;
@@ -457,16 +503,18 @@
 
 <!-- Step 1: Token -->
 <div class="topbar">
-  <h1>👥 Meta Audiences</h1>
-  <input type="password" id="access-token" placeholder="System access token" style="display: none;">
-  <button id="load-accounts-btn" onclick="loadAccounts()" style="display: none;">Load Accounts</button>
+  <h1>&#128101; Meta Audiences</h1>
+  <input type="password" id="access-token" placeholder="System access token" />
+  <button id="load-accounts-btn" onclick="loadAccounts()">Load Accounts</button>
   <div class="topbar-error" id="api-error"></div>
 </div>
 
 <!-- Step 2: Account selector (appears after accounts load) -->
-<div class="account-bar visible" id="account-bar">
+<div class="account-bar" id="account-bar">
   <label for="account-select">Ad Account</label>
-  <select id="account-select" onchange="onAccountChange()"><option value="">— select an account —</option><option value="act_25662535" data-currency="GBP" data-timezone="America/Los_Angeles" data-status="Active">The Woodland Trust (Boosting) (act_25662535)  ·  Active</option><option value="act_101608153363032" data-currency="EUR" data-timezone="Europe/Paris" data-status="Active">Bandai Namco Entertainment Europe (act_101608153363032)  ·  Active</option><option value="act_10154552777197589" data-currency="GBP" data-timezone="Europe/London" data-status="Active">Prostate Cancer UK Main Ad Account (act_10154552777197589)  ·  Active</option><option value="act_1961589034077222" data-currency="GBP" data-timezone="Europe/London" data-status="Active">CAN Digital Solutions Limited (act_1961589034077222)  ·  Active</option><option value="act_983322782399362" data-currency="GBP" data-timezone="Europe/London" data-status="Active">Prostate Cancer UK trading account (new) (act_983322782399362)  ·  Active</option><option value="act_3215282401956851" data-currency="GBP" data-timezone="Europe/London" data-status="Active">Anonymised (act_3215282401956851)  ·  Active</option><option value="act_2817215798409189" data-currency="GBP" data-timezone="Europe/London" data-status="Active">Woodland Trust x M.i. Media (act_2817215798409189)  ·  Active</option><option value="act_2300867086944581" data-currency="GBP" data-timezone="Europe/Dublin" data-status="Active">BYD UK New (act_2300867086944581)  ·  Active</option><option value="act_1196241645648148" data-currency="GBP" data-timezone="Europe/London" data-status="Active">Woodland Trust Enterprise Limited  (act_1196241645648148)  ·  Active</option><option value="act_1595357968408964" data-currency="EUR" data-timezone="Europe/Rome" data-status="Active">BBPM_JK (act_1595357968408964)  ·  Active</option></select>
+  <select id="account-select" onchange="onAccountChange()">
+    <option value="">— select an account —</option>
+  </select>
   <span class="account-meta" id="account-meta"></span>
 </div>
 
@@ -476,23 +524,27 @@
   <!-- Audience list -->
   <div class="list-panel">
     <div class="list-header">
-      <h2>Custom Audiences</h2>
+      <h2>Audiences</h2>
       <span class="list-count" id="list-count"></span>
+      <div class="sort-controls" id="sort-controls" style="display:none">
+        <button class="sort-btn active" id="sort-name" onclick="setSort('name')">Name ↕</button>
+        <button class="sort-btn"        id="sort-size" onclick="setSort('size')">Size ↕</button>
+      </div>
     </div>
     <div class="list-filter-bar" id="list-filter-bar" style="display:none">
-      <button class="toggle-btn active" id="toggle-all" onclick="setAnonFilter(false)">All</button>
-      <button class="toggle-btn" id="toggle-anon" onclick="setAnonFilter(true)">Anonymised only</button>
+      <button class="toggle-btn active" id="toggle-all"  onclick="setAnonFilter(false)">All</button>
+      <button class="toggle-btn"        id="toggle-anon" onclick="setAnonFilter(true)">Anonymised only</button>
     </div>
     <div class="list-search">
-      <input id="list-filter" type="text" placeholder="Filter by name…" oninput="filterList()" disabled="">
+      <input id="list-filter" type="text" placeholder="Filter by name…" oninput="filterList()" disabled>
     </div>
     <div class="spinner" id="list-spinner">Loading…</div>
     <div class="list-body" id="list-body">
       <div class="empty-state">Load accounts above to get started.</div>
     </div>
     <div class="pagination" id="pagination" style="display:none">
-      <button id="prev-btn" onclick="paginate('prev')" disabled="">← Prev</button>
-      <button id="next-btn" onclick="paginate('next')" disabled="">Next →</button>
+      <button id="prev-btn" onclick="paginate('prev')" disabled>&#8592; Prev</button>
+      <button id="next-btn" onclick="paginate('next')" disabled>Next &#8594;</button>
     </div>
   </div>
 
@@ -532,6 +584,10 @@ var DETAIL_FIELDS = 'rule,lookalike_spec,lookalike_audience_ids';
 
 // Whether to filter to anon audiences only
 var anonOnly = false;
+
+// Sort state
+var sortBy  = 'name'; // 'name' | 'size'
+var sortDir = 'asc';  // 'asc'  | 'desc'
 
 var ACCOUNT_STATUS_LABELS = {
   1: 'Active', 2: 'Disabled', 3: 'Unsettled',
@@ -669,6 +725,7 @@ function fetchAudiences(accountId, cursor) {
 
       document.getElementById('list-filter').disabled = false;
       document.getElementById('list-filter-bar').style.display = 'flex';
+      document.getElementById('sort-controls').style.display = 'flex';
       renderList(filteredAudiences);
     })
     .catch(function(err) {
@@ -718,17 +775,48 @@ function audienceItemHtml(a, i) {
     + '</div></div>';
 }
 
+function sortGroup(group) {
+  return group.slice().sort(function(x, y) {
+    var a = x.a, b = y.a;
+    var val;
+    if (sortBy === 'size') {
+      var aSize = a.approximate_count_lower_bound || 0;
+      var bSize = b.approximate_count_lower_bound || 0;
+      val = aSize - bSize;
+    } else {
+      val = a.name.toLowerCase() < b.name.toLowerCase() ? -1 : a.name.toLowerCase() > b.name.toLowerCase() ? 1 : 0;
+    }
+    return sortDir === 'asc' ? val : -val;
+  });
+}
+
+function setSort(by) {
+  if (sortBy === by) {
+    sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    sortBy  = by;
+    sortDir = by === 'size' ? 'desc' : 'asc'; // size defaults desc (largest first)
+  }
+  var arrow = sortDir === 'asc' ? ' ↑' : ' ↓';
+  document.getElementById('sort-name').textContent = 'Name' + (sortBy === 'name' ? arrow : ' ↕');
+  document.getElementById('sort-size').textContent = 'Size' + (sortBy === 'size' ? arrow : ' ↕');
+  document.getElementById('sort-name').classList.toggle('active', sortBy === 'name');
+  document.getElementById('sort-size').classList.toggle('active', sortBy === 'size');
+  renderList(filteredAudiences);
+}
+
 function renderList(audiences) {
   var listBody = document.getElementById('list-body');
   document.getElementById('list-count').textContent =
     audiences.length + ' audience' + (audiences.length !== 1 ? 's' : '');
+  document.getElementById('sort-controls').style.display = audiences.length ? 'flex' : 'none';
 
   if (!audiences.length) {
     listBody.innerHTML = '<div class="empty-state">No audiences found.</div>';
     return;
   }
 
-  // Split into Anonymised (anon) and all others, preserving original index for selectAudience
+  // Split into groups preserving original index, then sort each group
   var anonGroup  = [];
   var otherGroup = [];
   audiences.forEach(function(a, i) {
@@ -736,13 +824,14 @@ function renderList(audiences) {
     else           { otherGroup.push({ a: a, i: i }); }
   });
 
-  var html = '';
+  anonGroup  = sortGroup(anonGroup);
+  otherGroup = sortGroup(otherGroup);
 
+  var html = '';
   if (anonGroup.length) {
     html += '<div class="list-group-header">Anonymised (' + anonGroup.length + ')</div>';
     html += anonGroup.map(function(x) { return audienceItemHtml(x.a, x.i); }).join('');
   }
-
   if (otherGroup.length) {
     html += '<div class="list-group-header other">Other (' + otherGroup.length + ')</div>';
     html += otherGroup.map(function(x) { return audienceItemHtml(x.a, x.i); }).join('');
@@ -788,6 +877,34 @@ function selectAudience(index) {
   apiFetch(url)
     .then(function(json) {
       document.getElementById('detail-rule-area').innerHTML = renderAudienceRule(json.rule, json.lookalike_spec);
+
+      // Fetch lookalike audiences derived from this one
+      var ids = json.lookalike_audience_ids;
+      var lookalikeArea = document.getElementById('detail-lookalike-area');
+      if (!lookalikeArea) return;
+
+      if (!ids || !ids.length) {
+        lookalikeArea.innerHTML = '';
+        return;
+      }
+
+      lookalikeArea.innerHTML = '<div class="section-label" style="margin-top:20px">Derived Lookalike Audiences</div>'
+        + '<div class="no-rule" style="color:var(--muted)">Loading lookalikes…</div>';
+
+      var fields = 'id,name,delivery_status,approximate_count_lower_bound,approximate_count_upper_bound,lookalike_spec';
+      Promise.all(ids.map(function(id) {
+        return apiFetch(API + '/' + id + '?fields=' + encodeURIComponent(fields) + '&access_token=' + encodeURIComponent(token()));
+      }))
+      .then(function(results) {
+        lookalikeArea.innerHTML = '<div class="section-label" style="margin-top:20px">Derived Lookalike Audiences ('
+          + results.length + ')</div>'
+          + '<div class="lookalike-section">'
+          + results.map(function(la) { return renderLookalikeCard(la); }).join('')
+          + '</div>';
+      })
+      .catch(function() {
+        lookalikeArea.innerHTML = '';
+      });
     })
     .catch(function(err) {
       document.getElementById('detail-rule-area').innerHTML =
@@ -833,12 +950,41 @@ function renderDetail(a) {
 
   html += '<div class="section-label">Audience Criteria</div>';
   html += '<div id="detail-rule-area"></div>';
+  html += '<div id="detail-lookalike-area"></div>';
 
   document.getElementById('detail-panel').innerHTML = html;
 }
 
 function statCard(label, value) {
   return '<div class="stat-card"><strong>' + value + '</strong>' + escHtml(label) + '</div>';
+}
+
+function renderLookalikeCard(la) {
+  var isActive    = la.delivery_status && la.delivery_status.code === 200;
+  var statusLabel = la.delivery_status ? la.delivery_status.description : 'Unknown';
+  var dotClass    = isActive ? 'dot-active' : 'dot-inactive';
+
+  var lower = la.approximate_count_lower_bound;
+  var upper = la.approximate_count_upper_bound;
+  var sizeStr = (lower != null && upper != null)
+    ? formatCount(lower) + ' – ' + formatCount(upper) : '—';
+
+  var spec = la.lookalike_spec || {};
+  var ratio   = spec.ratio   ? Math.round(spec.ratio * 100) + '%' : null;
+  var country = spec.country || null;
+
+  return '<div class="lookalike-card">'
+    + '<div class="lookalike-icon">&#128257;</div>'
+    + '<div class="lookalike-info">'
+    +   '<div class="lookalike-name">' + escHtml(la.name) + '</div>'
+    +   '<div class="lookalike-meta">'
+    +     '<span><span class="status-dot ' + dotClass + '"></span>' + escHtml(statusLabel) + '</span>'
+    +     '<span>&#128101; ' + sizeStr + '</span>'
+    +     (country ? '<span>&#127757; ' + escHtml(country) + '</span>' : '')
+    +     (ratio   ? '<span>&#9881; ' + escHtml(ratio) + ' of audience</span>' : '')
+    +   '</div>'
+    + '</div>'
+    + '</div>';
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1007,6 +1153,5 @@ window.addEventListener('DOMContentLoaded', function() {
   }
 });
 </script>
-
-
-</body></html>
+</body>
+</html>
