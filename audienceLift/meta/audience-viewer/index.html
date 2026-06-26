@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -183,8 +184,25 @@
       display: flex;
       align-items: center;
       gap: 12px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
     }
+    .lookalike-card:hover { border-color: var(--teal); background: var(--surface-2); }
     .lookalike-card:last-child { margin-bottom: 0; }
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      color: var(--teal);
+      cursor: pointer;
+      margin-bottom: 16px;
+      padding: 4px 0;
+      border: none;
+      background: none;
+      letter-spacing: 0.02em;
+    }
+    .back-link:hover { color: var(--teal-tint); }
     .lookalike-icon {
       width: 32px; height: 32px;
       border-radius: 50%;
@@ -285,6 +303,17 @@
     }
     .dot-active   { background: var(--teal); }
     .dot-inactive { background: var(--danger); }
+    .type-badge {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      padding: 1px 5px;
+      border-radius: 3px;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    .type-badge-seed { background: rgba(1,245,212,0.12); color: var(--teal);  border: 1px solid rgba(1,245,212,0.3); }
+    .type-badge-lal  { background: rgba(253,89,1,0.1);   color: #FD5901;      border: 1px solid rgba(253,89,1,0.3); }
 
     .list-group-header {
       padding: 6px 14px;
@@ -561,6 +590,7 @@
 var SYSTEM_TOKEN = ''; // populate when hosting locally
 //var API          = 'https://graph.facebook.com/v25.0'; // populate when hosting locally
 var API          = 'https://meta-proxy.jonathan-1be.workers.dev/api/v25.0'; // populate when hosting on Github
+  
 // ═══════════════════════════════════════════════════════
 //  STATE
 // ═══════════════════════════════════════════════════════
@@ -568,13 +598,15 @@ var allAudiences      = [];
 var filteredAudiences = [];
 var allAccounts       = [];
 var cursors           = { before: null, after: null };
+var lookalikeSeedMap  = {}; // lookalike_id -> seed audience object
+var lookalikDataMap   = {}; // lookalike_id -> lookalike data object
 
-// Fields for the list — deliberately excludes rule/lookalike_spec (fetched on demand)
+// Fields for the list — excludes rule (heavy) but includes lookalike_spec to identify LAL vs seed
 var LIST_FIELDS = [
   'account_id','id','name','description','delivery_status','operation_status',
   'data_source','is_value_based','retention_days','sharing_status',
   'approximate_count_lower_bound','approximate_count_upper_bound',
-  'time_created','time_updated','time_content_updated'
+  'time_created','time_updated','time_content_updated','lookalike_spec'
 ].join(',');
 
 // Fields fetched when a user clicks an audience
@@ -767,8 +799,16 @@ function audienceItemHtml(a, i) {
     ? new Date(a.time_content_updated * 1000).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })
     : '';
 
+  var isLal    = !!(a.lookalike_spec);
+  var typeBadge = isLal
+    ? '<span class="type-badge type-badge-lal">LAL</span>'
+    : '<span class="type-badge type-badge-seed">SEED</span>';
+
   return '<div class="audience-item" data-index="' + i + '" onclick="selectAudience(' + i + ')">'
-    + '<div class="audience-name">' + escHtml(a.name) + '</div>'
+    + '<div class="audience-name" style="display:flex;align-items:center;gap:6px">'
+    +   '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escHtml(a.name) + '</span>'
+    +   typeBadge
+    + '</div>'
     + '<div class="audience-meta-row">'
     + '<span><span class="status-dot ' + dotClass + '"></span>' + escHtml(statusLabel) + '</span>'
     + (sizeStr ? '<span>&#128101; ' + sizeStr + '</span>' : '')
@@ -884,6 +924,14 @@ function selectAudience(index) {
       var lookalikeArea = document.getElementById('detail-lookalike-area');
       if (!lookalikeArea) return;
 
+      // Update the stat card count now we know it
+      var countEl = document.getElementById('detail-lookalike-count');
+      if (countEl) {
+        var n = (ids && ids.length) ? ids.length : 0;
+        countEl.style.color = n > 0 ? 'var(--teal)' : 'var(--muted)';
+        countEl.textContent = String(n);
+      }
+
       if (!ids || !ids.length) {
         lookalikeArea.innerHTML = '';
         return;
@@ -900,7 +948,7 @@ function selectAudience(index) {
         lookalikeArea.innerHTML = '<div class="section-label" style="margin-top:20px">Derived Lookalike Audiences ('
           + results.length + ')</div>'
           + '<div class="lookalike-section">'
-          + results.map(function(la) { return renderLookalikeCard(la); }).join('')
+          + results.map(function(la) { return renderLookalikeCard(la, a); }).join('')
           + '</div>';
       })
       .catch(function() {
@@ -913,10 +961,83 @@ function selectAudience(index) {
     });
 }
 
+function selectLookalike(id) {
+  var la           = lookalikDataMap[id];
+  var seedAudience = lookalikeSeedMap[id];
+  if (!la) return;
+
+  // Clear list selection — lookalike may not be in the visible list
+  document.querySelectorAll('.audience-item').forEach(function(el) { el.classList.remove('active'); });
+
+  renderDetail(la, seedAudience);
+
+  var url = API + '/' + la.id + '?fields=' + encodeURIComponent(DETAIL_FIELDS) + tokenParam();
+  document.getElementById('detail-rule-area').innerHTML =
+    '<div class="no-rule" style="color:#888">Loading criteria…</div>';
+
+  apiFetch(url)
+    .then(function(json) {
+      document.getElementById('detail-rule-area').innerHTML = renderAudienceRule(json.rule, json.lookalike_spec);
+      // Lookalikes don't have downstream lookalikes — clear the area
+      var lookalikeArea = document.getElementById('detail-lookalike-area');
+      if (lookalikeArea) lookalikeArea.innerHTML = '';
+    })
+    .catch(function(err) {
+      document.getElementById('detail-rule-area').innerHTML =
+        '<div class="no-rule">Could not load criteria: ' + escHtml(err.message) + '</div>';
+    });
+}
+
+function goBackToSeed(seedId) {
+  // Find seed in filteredAudiences and re-select it
+  for (var i = 0; i < filteredAudiences.length; i++) {
+    if (filteredAudiences[i].id === seedId) {
+      selectAudience(i);
+      return;
+    }
+  }
+  // Not in current page — fetch it directly
+  var url = API + '/' + seedId + '?fields=' + encodeURIComponent(LIST_FIELDS) + tokenParam();
+  apiFetch(url).then(function(seed) {
+    document.querySelectorAll('.audience-item').forEach(function(el) { el.classList.remove('active'); });
+    renderDetail(seed, null);
+    var detailUrl = API + '/' + seed.id + '?fields=' + encodeURIComponent(DETAIL_FIELDS) + tokenParam();
+    document.getElementById('detail-rule-area').innerHTML =
+      '<div class="no-rule" style="color:#888">Loading criteria…</div>';
+    apiFetch(detailUrl).then(function(json) {
+      document.getElementById('detail-rule-area').innerHTML = renderAudienceRule(json.rule, json.lookalike_spec);
+      var ids = json.lookalike_audience_ids;
+      var lookalikeArea = document.getElementById('detail-lookalike-area');
+      var countEl2 = document.getElementById('detail-lookalike-count');
+      if (countEl2) {
+        var n2 = (ids && ids.length) ? ids.length : 0;
+        countEl2.style.color = n2 > 0 ? 'var(--teal)' : 'var(--muted)';
+        countEl2.textContent = String(n2);
+      }
+      if (!lookalikeArea || !ids || !ids.length) { if (lookalikeArea) lookalikeArea.innerHTML = ''; return; }
+      lookalikeArea.innerHTML = '<div class="section-label" style="margin-top:20px">Derived Lookalike Audiences</div>'
+        + '<div class="no-rule" style="color:var(--muted)">Loading lookalikes…</div>';
+      var fields = 'id,name,delivery_status,approximate_count_lower_bound,approximate_count_upper_bound,lookalike_spec';
+      Promise.all(ids.map(function(id) {
+        return apiFetch(API + '/' + id + '?fields=' + encodeURIComponent(fields) + tokenParam());
+      })).then(function(results) {
+        lookalikeArea.innerHTML = '<div class="section-label" style="margin-top:20px">Derived Lookalike Audiences ('
+          + results.length + ')</div>'
+          + '<div class="lookalike-section">'
+          + results.map(function(la) { return renderLookalikeCard(la, seed); }).join('')
+          + '</div>';
+      }).catch(function() { lookalikeArea.innerHTML = ''; });
+    }).catch(function(err) {
+      document.getElementById('detail-rule-area').innerHTML =
+        '<div class="no-rule">Could not load criteria: ' + escHtml(err.message) + '</div>';
+    });
+  }).catch(function() {});
+}
+
 // ═══════════════════════════════════════════════════════
 //  DETAIL
 // ═══════════════════════════════════════════════════════
-function renderDetail(a) {
+function renderDetail(a, seedAudience) {
   var lower = a.approximate_count_lower_bound;
   var upper = a.approximate_count_upper_bound;
   var sizeStr = (lower != null && upper != null)
@@ -933,12 +1054,24 @@ function renderDetail(a) {
   var deliveryLabel  = a.delivery_status ? a.delivery_status.description : '—';
   var deliveryColour = (a.delivery_status && a.delivery_status.code === 200) ? '#27ae60' : '#e74c3c';
 
-  var html = '<div class="detail-title">' + escHtml(a.name) + '</div>'
+  var html = '';
+  if (seedAudience) {
+    html += '<button class="back-link" onclick="goBackToSeed(\'' + seedAudience.id + '\')">'
+      + '&#8592; ' + escHtml(seedAudience.name)
+      + '</button>';
+  }
+
+  html += '<div class="detail-title">' + escHtml(a.name) + '</div>'
     + '<div class="detail-id">ID: ' + escHtml(a.id) + '&nbsp;·&nbsp;Account: ' + escHtml(a.account_id || '') + '</div>';
 
   if (a.description) {
     html += '<div class="detail-description">' + escHtml(a.description) + '</div>';
   }
+
+  // Lookalike count: dash if this audience IS a lookalike; placeholder if it's a seed (updated after fetch)
+  var lookalikesValue = seedAudience
+    ? '—'
+    : '<span id="detail-lookalike-count" style="color:var(--muted)">·</span>';
 
   html += '<div class="stat-row">'
     + statCard('Size (est.)', sizeStr)
@@ -947,6 +1080,7 @@ function renderDetail(a) {
     + statCard('Retention', a.retention_days ? a.retention_days + ' days' : '—')
     + statCard('Created', created)
     + statCard('Updated', updated)
+    + statCard('Lookalikes', lookalikesValue)
     + '</div>';
 
   html += '<div class="section-label">Audience Criteria</div>';
@@ -960,7 +1094,10 @@ function statCard(label, value) {
   return '<div class="stat-card"><strong>' + value + '</strong>' + escHtml(label) + '</div>';
 }
 
-function renderLookalikeCard(la) {
+function renderLookalikeCard(la, seedAudience) {
+  lookalikDataMap[la.id]  = la;
+  lookalikeSeedMap[la.id] = seedAudience;
+
   var isActive    = la.delivery_status && la.delivery_status.code === 200;
   var statusLabel = la.delivery_status ? la.delivery_status.description : 'Unknown';
   var dotClass    = isActive ? 'dot-active' : 'dot-inactive';
@@ -974,7 +1111,7 @@ function renderLookalikeCard(la) {
   var ratio   = spec.ratio   ? Math.round(spec.ratio * 100) + '%' : null;
   var country = spec.country || null;
 
-  return '<div class="lookalike-card">'
+  return '<div class="lookalike-card" onclick="selectLookalike(\'' + la.id + '\')">'
     + '<div class="lookalike-icon">&#128257;</div>'
     + '<div class="lookalike-info">'
     +   '<div class="lookalike-name">' + escHtml(la.name) + '</div>'
@@ -983,6 +1120,7 @@ function renderLookalikeCard(la) {
     +     '<span>&#128101; ' + sizeStr + '</span>'
     +     (country ? '<span>&#127757; ' + escHtml(country) + '</span>' : '')
     +     (ratio   ? '<span>&#9881; ' + escHtml(ratio) + ' of audience</span>' : '')
+    +     '<span style="color:var(--teal);margin-left:auto;font-size:10px;font-weight:700;letter-spacing:0.04em">VIEW &#8594;</span>'
     +   '</div>'
     + '</div>'
     + '</div>';
