@@ -561,7 +561,6 @@
 var SYSTEM_TOKEN = ''; // populate when hosting locally
 //var API          = 'https://graph.facebook.com/v25.0'; // populate when hosting locally
 var API          = 'https://meta-proxy.jonathan-1be.workers.dev/api/v25.0'; // populate when hosting on Github
-  
 // ═══════════════════════════════════════════════════════
 //  STATE
 // ═══════════════════════════════════════════════════════
@@ -597,7 +596,10 @@ var ACCOUNT_STATUS_LABELS = {
 // ═══════════════════════════════════════════════════════
 //  HELPERS
 // ═══════════════════════════════════════════════════════
+function usingProxy() { return API.indexOf('graph.facebook.com') === -1; }
 function token() { return SYSTEM_TOKEN || document.getElementById('access-token').value.trim(); }
+// Returns the access_token query param, or empty string when the proxy supplies it server-side
+function tokenParam() { return token() ? ('&access_token=' + encodeURIComponent(token())) : ''; }
 function setError(msg) {
   var el = document.getElementById('api-error');
   el.textContent = msg;
@@ -616,7 +618,7 @@ function apiFetch(url) {
 //  STEP 1 — LOAD AD ACCOUNTS
 // ═══════════════════════════════════════════════════════
 function loadAccounts() {
-  if (!token()) { setError('Enter a system access token first.'); return; }
+  if (!usingProxy() && !token()) { setError('Enter a system access token first.'); return; }
   setError('');
 
   var btn = document.getElementById('load-accounts-btn');
@@ -626,7 +628,7 @@ function loadAccounts() {
   var url = API + '/me/adaccounts'
     + '?fields=id,name,account_status,currency,timezone_name'
     + '&limit=200'
-    + '&access_token=' + encodeURIComponent(token());
+    + tokenParam();
 
   apiFetch(url)
     .then(function(json) {
@@ -702,7 +704,7 @@ function fetchAudiences(accountId, cursor) {
     + '?fields=' + encodeURIComponent(LIST_FIELDS)
     + '&limit=50'
     + (anonOnly ? '&filtering=' + encodeURIComponent(JSON.stringify([{field:'name',operator:'CONTAIN',value:'anon'}])) : '')
-    + '&access_token=' + encodeURIComponent(token());
+    + tokenParam();
 
   if (cursor) url += '&' + cursor;
 
@@ -868,7 +870,7 @@ function selectAudience(index) {
   // Fetch rule on demand
   var url = API + '/' + a.id
     + '?fields=' + encodeURIComponent(DETAIL_FIELDS)
-    + '&access_token=' + encodeURIComponent(token());
+    + tokenParam();
 
   document.getElementById('detail-rule-area').innerHTML =
     '<div class="no-rule" style="color:#888">Loading criteria…</div>';
@@ -892,7 +894,7 @@ function selectAudience(index) {
 
       var fields = 'id,name,delivery_status,approximate_count_lower_bound,approximate_count_upper_bound,lookalike_spec';
       Promise.all(ids.map(function(id) {
-        return apiFetch(API + '/' + id + '?fields=' + encodeURIComponent(fields) + '&access_token=' + encodeURIComponent(token()));
+        return apiFetch(API + '/' + id + '?fields=' + encodeURIComponent(fields) + tokenParam());
       }))
       .then(function(results) {
         lookalikeArea.innerHTML = '<div class="section-label" style="margin-top:20px">Derived Lookalike Audiences ('
