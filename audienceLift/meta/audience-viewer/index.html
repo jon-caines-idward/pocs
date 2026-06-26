@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Meta Custom Audiences Viewer</title>
+  <title>Meta Custom Audiences</title>
   <style>
     /* ── Anonymised brand tokens ── */
     :root {
@@ -313,6 +313,39 @@
     }
     .type-badge-seed { background: rgba(1,245,212,0.12); color: var(--teal);  border: 1px solid rgba(1,245,212,0.3); }
     .type-badge-lal  { background: rgba(253,89,1,0.1);   color: #FD5901;      border: 1px solid rgba(253,89,1,0.3); }
+    /* ── Restricted / masked audience ── */
+    --amber: #f59e0b;
+    .masked-size {
+      font-size: 10px;
+      font-weight: 700;
+      color: #f59e0b;
+      letter-spacing: 0.03em;
+    }
+    .restricted-banner {
+      background: rgba(245,158,11,0.08);
+      border: 1px solid rgba(245,158,11,0.3);
+      border-radius: 6px;
+      padding: 12px 14px;
+      margin-bottom: 18px;
+      font-size: 12px;
+      color: #f59e0b;
+      line-height: 1.5;
+    }
+    .restricted-banner strong { display: block; margin-bottom: 4px; font-size: 13px; }
+    .restricted-banner ul { margin: 6px 0 4px 14px; color: #d4a017; }
+    .restricted-banner li { margin-bottom: 2px; }
+    .restricted-note { font-size: 11px; color: var(--muted); margin-top: 6px; }
+    .account-small-banner {
+      margin: 8px 10px;
+      background: rgba(245,158,11,0.07);
+      border: 1px solid rgba(245,158,11,0.25);
+      border-radius: 5px;
+      padding: 9px 11px;
+      font-size: 11px;
+      color: #d4a017;
+      line-height: 1.5;
+    }
+    .account-small-banner strong { display: block; color: #f59e0b; margin-bottom: 3px; font-size: 11px; }
 
     .list-group-header {
       padding: 6px 14px;
@@ -629,6 +662,50 @@ var ACCOUNT_STATUS_LABELS = {
 // ═══════════════════════════════════════════════════════
 function usingProxy() { return API.indexOf('graph.facebook.com') === -1; }
 function token() { return SYSTEM_TOKEN || document.getElementById('access-token').value.trim(); }
+// Returns true when Meta is definitely masking size (20/20 placeholder or -1)
+function isRestricted(a) {
+  var lo = a.approximate_count_lower_bound;
+  var hi = a.approximate_count_upper_bound;
+  return (lo === 20 && hi === 20) || lo === -1 || hi === -1;
+}
+// Returns true for any sub-1K audience (includes restricted, new, and potentially misconfigured)
+function isSmall(a) {
+  var lo = a.approximate_count_lower_bound;
+  var hi = a.approximate_count_upper_bound;
+  return lo != null && hi != null && lo < 1000 && hi < 1000;
+}
+// Returns true if the audience was created within the last 24 hours
+function isNewAudience(a) {
+  if (!a.time_created) return false;
+  return (Date.now() / 1000 - a.time_created) < 86400;
+}
+// Builds a proportional size observation across both audience groups.
+// Returns null if nothing notable, otherwise an object with counts and context.
+var CUT_2025 = 1735689600; // 1 Jan 2025 UTC — approx when Sensitive Data Restrictions began rolling out
+function buildSizeDiagnostic() {
+  var total = allAudiences.length;
+  if (!total) return null;
+  var smallCount = allAudiences.filter(isSmall).length;
+  if (!smallCount) return null;
+
+  var anonGroup  = allAudiences.filter(isAnon);
+  var otherGroup = allAudiences.filter(function(a) { return !isAnon(a); });
+
+  // Unmasked audiences that predate 2025 — may have been created before restrictions were applied
+  var oldUnmasked = allAudiences.filter(function(a) {
+    return !isSmall(a) && a.time_created && a.time_created < CUT_2025;
+  }).length;
+
+  return {
+    total:      total,
+    smallCount: smallCount,
+    anonTotal:  anonGroup.length,
+    anonSmall:  anonGroup.filter(isSmall).length,
+    otherTotal: otherGroup.length,
+    otherSmall: otherGroup.filter(isSmall).length,
+    oldUnmasked: oldUnmasked
+  };
+}
 // Returns the access_token query param, or empty string when the proxy supplies it server-side
 function tokenParam() { return token() ? ('&access_token=' + encodeURIComponent(token())) : ''; }
 function setError(msg) {
@@ -789,8 +866,11 @@ function audienceItemHtml(a, i) {
 
   var lower = a.approximate_count_lower_bound;
   var upper = a.approximate_count_upper_bound;
+  var restricted = isRestricted(a);
   var sizeStr = '';
-  if (lower != null && upper != null) {
+  if (restricted) {
+    sizeStr = '<span class="masked-size">⚠ Masked</span>';
+  } else if (lower != null && upper != null) {
     sizeStr = lower < 1000 && upper < 1000 ? '&lt;1K' : formatCount(lower) + '–' + formatCount(upper);
   }
 
@@ -810,7 +890,7 @@ function audienceItemHtml(a, i) {
     + '</div>'
     + '<div class="audience-meta-row">'
     + '<span><span class="status-dot ' + dotClass + '"></span>' + escHtml(statusLabel) + '</span>'
-    + (sizeStr ? '<span>&#128101; ' + sizeStr + '</span>' : '')
+    + (sizeStr ? '<span>' + (restricted ? '' : '&#128101; ') + sizeStr + '</span>' : '')
     + (updated ? '<span>&#128197; ' + updated + '</span>' : '')
     + '</div></div>';
 }
@@ -868,6 +948,32 @@ function renderList(audiences) {
   otherGroup = sortGroup(otherGroup);
 
   var html = '';
+
+  // Proportional size observation — shown when at least some audiences are sub-1K
+  var diag = buildSizeDiagnostic();
+  if (diag) {
+    var msg = diag.smallCount + ' of ' + diag.total + ' audience'
+      + (diag.total !== 1 ? 's' : '') + ' show sub-1,000 sizes.';
+
+    // Cross-group breakdown when both groups are present
+    if (diag.anonTotal > 0 && diag.otherTotal > 0) {
+      msg += ' ' + diag.anonSmall + '/' + diag.anonTotal + ' Anonymised'
+        + ' and ' + diag.otherSmall + '/' + diag.otherTotal + ' other audiences are affected.';
+    }
+
+    // Note if unmasked audiences are predominantly older — helps contextualise the split
+    if (diag.oldUnmasked > 0) {
+      msg += ' ' + diag.oldUnmasked + ' audience' + (diag.oldUnmasked !== 1 ? 's' : '')
+        + ' with visible sizes appear to predate 2025, which may be before a restriction was applied to this account.';
+    }
+
+    msg += ' Possible explanations: a Special Ad Category or Sensitive Data Restriction applied at account level,'
+      + ' audiences created recently that are still populating, or individual audience configuration issues.'
+      + ' Check creation dates and criteria in the detail panel.';
+
+    html += '<div class="account-small-banner"><strong>⚠ Audience size observations</strong>' + msg + '</div>';
+  }
+
   if (anonGroup.length) {
     html += '<div class="list-group-header">Anonymised (' + anonGroup.length + ')</div>';
     html += anonGroup.map(function(x) { return audienceItemHtml(x.a, x.i); }).join('');
@@ -1076,13 +1182,18 @@ function renderDetail(a, seedAudience) {
     html += '<div class="detail-description">' + escHtml(a.description) + '</div>';
   }
 
+  var restricted  = isRestricted(a);
+  var sizeDisplay = restricted
+    ? '<span style="color:#f59e0b">Masked</span>'
+    : escHtml(sizeStr);
+
   // Lookalike count: dash if this audience IS a lookalike; placeholder if it's a seed (updated after fetch)
   var lookalikesValue = seedAudience
     ? '—'
     : '<span id="detail-lookalike-count" style="color:var(--muted)">·</span>';
 
   html += '<div class="stat-row">'
-    + statCard('Size (est.)', sizeStr)
+    + statCard('Size (est.)', sizeDisplay)
     + statCard('Delivery', '<span style="color:' + deliveryColour + '">' + escHtml(deliveryLabel) + '</span>')
     + statCard('Source', escHtml(dataSourceLabel))
     + statCard('Retention', a.retention_days ? a.retention_days + ' days' : '—')
@@ -1090,6 +1201,35 @@ function renderDetail(a, seedAudience) {
     + statCard('Updated', updated)
     + statCard('Lookalikes', lookalikesValue)
     + '</div>';
+
+  var smallNotRestricted = isSmall(a) && !restricted;
+  var isNew = isNewAudience(a);
+
+  if (restricted) {
+    html += '<div class="restricted-banner">'
+      + '<strong>⚠ Audience size masked by Meta</strong>'
+      + 'Meta returns a placeholder count of 20 — not your real audience size. This is caused by one or more of:'
+      + '<ul>'
+      + '<li><strong>Special Ad Categories</strong> — Housing, Employment, Credit, or Social Issues. Age and gender are locked; Lookalikes and interest-based exclusions are unavailable.</li>'
+      + '<li><strong>Sensitive Data Restrictions (2025)</strong> — domain flagged as health, financial, or political. Pixel data is restricted even without a category being selected.</li>'
+      + '<li><strong>Core / Restricted Data Processing</strong> — UK/EU traffic under GDPR minimisation. Reduces matching but does not cause the "20" masking directly.</li>'
+      + '</ul>'
+      + '<div class="restricted-note">Delivery is unaffected — ads still reach the full eligible pool. Use UTMs and landing-page conversions rather than audience size to measure retargeting performance.</div>'
+      + '</div>';
+  } else if (smallNotRestricted) {
+    var d = buildSizeDiagnostic();
+    var accountNote = d
+      ? d.smallCount + ' of ' + d.total + ' audiences in this account are also sub-1,000.'
+        + (d.oldUnmasked > 0 ? ' Some audiences with visible sizes appear to predate 2025.' : '')
+      : '';
+    html += '<div class="restricted-banner">'
+      + '<strong>⚠ Audience size below 1,000</strong>'
+      + (isNew ? 'This audience was created in the last 24 hours and may still be populating. ' : '')
+      + (accountNote ? accountNote + ' ' : '')
+      + 'Possible explanations: account-level Special Ad Category or Sensitive Data Restriction, audience still populating after recent creation, or criteria too narrow or misconfigured — review the criteria below.'
+      + '<div class="restricted-note">Delivery may still occur if the eligible pool is sufficient. Size reporting is suppressed below 1,000 by Meta.</div>'
+      + '</div>';
+  }
 
   html += '<div class="section-label">Audience Criteria</div>';
   html += '<div id="detail-rule-area"></div>';
