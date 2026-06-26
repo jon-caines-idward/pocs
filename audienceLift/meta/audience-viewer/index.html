@@ -1,10 +1,8 @@
-
 <!DOCTYPE html>
-<html lang="en">
-<head>
+<html lang="en"><head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Meta Custom Audiences</title>
+  <title>Meta Custom Audience Viewer</title>
   <style>
     /* ── Anonymised brand tokens ── */
     :root {
@@ -459,18 +457,16 @@
 
 <!-- Step 1: Token -->
 <div class="topbar">
-  <h1>&#128101; Meta Audiences</h1>
-  <input type="password" id="access-token" placeholder="System access token" />
-  <button id="load-accounts-btn" onclick="loadAccounts()">Load Accounts</button>
+  <h1>👥 Meta Audiences</h1>
+  <input type="password" id="access-token" placeholder="System access token" style="display: none;">
+  <button id="load-accounts-btn" onclick="loadAccounts()" style="display: none;">Load Accounts</button>
   <div class="topbar-error" id="api-error"></div>
 </div>
 
 <!-- Step 2: Account selector (appears after accounts load) -->
-<div class="account-bar" id="account-bar">
+<div class="account-bar visible" id="account-bar">
   <label for="account-select">Ad Account</label>
-  <select id="account-select" onchange="onAccountChange()">
-    <option value="">— select an account —</option>
-  </select>
+  <select id="account-select" onchange="onAccountChange()"><option value="">— select an account —</option><option value="act_25662535" data-currency="GBP" data-timezone="America/Los_Angeles" data-status="Active">The Woodland Trust (Boosting) (act_25662535)  ·  Active</option><option value="act_101608153363032" data-currency="EUR" data-timezone="Europe/Paris" data-status="Active">Bandai Namco Entertainment Europe (act_101608153363032)  ·  Active</option><option value="act_10154552777197589" data-currency="GBP" data-timezone="Europe/London" data-status="Active">Prostate Cancer UK Main Ad Account (act_10154552777197589)  ·  Active</option><option value="act_1961589034077222" data-currency="GBP" data-timezone="Europe/London" data-status="Active">CAN Digital Solutions Limited (act_1961589034077222)  ·  Active</option><option value="act_983322782399362" data-currency="GBP" data-timezone="Europe/London" data-status="Active">Prostate Cancer UK trading account (new) (act_983322782399362)  ·  Active</option><option value="act_3215282401956851" data-currency="GBP" data-timezone="Europe/London" data-status="Active">Anonymised (act_3215282401956851)  ·  Active</option><option value="act_2817215798409189" data-currency="GBP" data-timezone="Europe/London" data-status="Active">Woodland Trust x M.i. Media (act_2817215798409189)  ·  Active</option><option value="act_2300867086944581" data-currency="GBP" data-timezone="Europe/Dublin" data-status="Active">BYD UK New (act_2300867086944581)  ·  Active</option><option value="act_1196241645648148" data-currency="GBP" data-timezone="Europe/London" data-status="Active">Woodland Trust Enterprise Limited  (act_1196241645648148)  ·  Active</option><option value="act_1595357968408964" data-currency="EUR" data-timezone="Europe/Rome" data-status="Active">BBPM_JK (act_1595357968408964)  ·  Active</option></select>
   <span class="account-meta" id="account-meta"></span>
 </div>
 
@@ -484,19 +480,19 @@
       <span class="list-count" id="list-count"></span>
     </div>
     <div class="list-filter-bar" id="list-filter-bar" style="display:none">
-      <button class="toggle-btn active" id="toggle-all"  onclick="setAnonFilter(false)">All</button>
-      <button class="toggle-btn"        id="toggle-anon" onclick="setAnonFilter(true)">Anonymised only</button>
+      <button class="toggle-btn active" id="toggle-all" onclick="setAnonFilter(false)">All</button>
+      <button class="toggle-btn" id="toggle-anon" onclick="setAnonFilter(true)">Anonymised only</button>
     </div>
     <div class="list-search">
-      <input id="list-filter" type="text" placeholder="Filter by name…" oninput="filterList()" disabled>
+      <input id="list-filter" type="text" placeholder="Filter by name…" oninput="filterList()" disabled="">
     </div>
     <div class="spinner" id="list-spinner">Loading…</div>
     <div class="list-body" id="list-body">
       <div class="empty-state">Load accounts above to get started.</div>
     </div>
     <div class="pagination" id="pagination" style="display:none">
-      <button id="prev-btn" onclick="paginate('prev')" disabled>&#8592; Prev</button>
-      <button id="next-btn" onclick="paginate('next')" disabled>Next &#8594;</button>
+      <button id="prev-btn" onclick="paginate('prev')" disabled="">← Prev</button>
+      <button id="next-btn" onclick="paginate('next')" disabled="">Next →</button>
     </div>
   </div>
 
@@ -512,7 +508,7 @@
 //  CONFIG — set token here to skip the input prompt
 // ═══════════════════════════════════════════════════════
 var SYSTEM_TOKEN = ''; // populate when hosting locally
-var API = 'https://meta-proxy.jonathan-1be.workers.dev/api/v25.0'; // populate when hosting publicly via GitHub
+var API = 'https://meta-proxy.jonathan-1be.workers.dev/api/v25.0'; // populate when hosting on Github
   
 // ═══════════════════════════════════════════════════════
 //  STATE
@@ -1011,5 +1007,6 @@ window.addEventListener('DOMContentLoaded', function() {
   }
 });
 </script>
-</body>
-</html>
+
+
+</body></html>
