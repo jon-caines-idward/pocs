@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Google Ads Audiences</title>
+  <title>Google Ads Audiences (Local)</title>
   <style>
     /* ── Anonymised brand tokens ── */
     :root {
@@ -240,7 +240,7 @@
 <body>
 
 <div class="topbar">
-  <h1>&#128202; Google Ads Audiences</h1>
+  <h1>&#128202; Google Ads Audiences <span style="font-size:10px;font-weight:400;color:#f59e0b;letter-spacing:0.06em;text-transform:uppercase">&#9679; Local</span></h1>
   <input type="password" id="access-token" placeholder="Not required when using proxy" />
   <button id="load-accounts-btn" onclick="loadAccounts()">Load Accounts</button>
   <div class="topbar-error" id="api-error"></div>
@@ -283,7 +283,7 @@
 //  CONFIG
 // ═══════════════════════════════════════════════════════
 var API        = 'https://gads-proxy.jonathan-1be.workers.dev'; // Cloudflare Worker URL
-var MANAGER_ID = '';  // MCC customer ID — leave blank if set as GOOGLE_MANAGER_ID in Worker
+var MANAGER_ID = '';  // MCC customer ID — set here or in .dev.vars as GOOGLE_MANAGER_ID
 
 // ═══════════════════════════════════════════════════════
 //  STATE
@@ -454,33 +454,34 @@ function loadAccounts() {
   var btn = document.getElementById('load-accounts-btn');
   btn.disabled = true; btn.textContent = 'Loading…';
 
-  gadsGet('/v24/customers:listAccessibleCustomers')
+  // Query customer_client table on the MCC to get all child accounts
+  var managerId = MANAGER_ID || '';
+  if (!managerId) {
+    // Fall back to listAccessibleCustomers and prompt user to set MANAGER_ID
+    setError('Set MANAGER_ID in the config block, or ensure GOOGLE_MANAGER_ID is set in the Worker.');
+    btn.disabled = false; btn.textContent = 'Load Accounts';
+    return;
+  }
+
+  var query = [
+    'SELECT',
+    '  customer_client.id,',
+    '  customer_client.descriptive_name,',
+    '  customer_client.currency_code,',
+    '  customer_client.time_zone,',
+    '  customer_client.status',
+    'FROM customer_client',
+    'WHERE customer_client.level = 1',
+    '  AND customer_client.status != \'HIDDEN\'',
+    'ORDER BY customer_client.descriptive_name ASC'
+  ].join(' ');
+
+  gadsSearch(managerId, query)
     .then(function(json) {
-      var resourceNames = json.resourceNames || [];
-      if (!resourceNames.length) {
-        btn.disabled = false; btn.textContent = 'Load Accounts';
-        setError('No accessible accounts found.');
-        return;
-      }
-      var ids = resourceNames.map(function(r) { return r.replace('customers/', ''); });
-      return Promise.all(ids.map(function(id) {
-        return gadsSearch(id, 'SELECT customer.id, customer.descriptive_name, customer.currency_code, customer.time_zone, customer.status FROM customer LIMIT 1')
-          .then(function(json) {
-            var row = (json.results || [])[0];
-            return row ? row.customer : { id: id, descriptiveName: 'Account ' + id };
-          })
-          .catch(function() {
-            return { id: id, descriptiveName: 'Account ' + id };
-          });
-      }));
-    })
-    .then(function(accounts) {
       btn.disabled = false; btn.textContent = 'Load Accounts';
-      if (!accounts) return;
-      accounts.sort(function(a, b) {
-        return (a.descriptiveName || '').localeCompare(b.descriptiveName || '');
-      });
-      populateAccountSelector(accounts);
+      var rows = json.results || [];
+      if (!rows.length) { setError('No client accounts found under this manager ID.'); return; }
+      populateAccountSelector(rows.map(function(r) { return r.customerClient; }));
       document.getElementById('account-bar').classList.add('visible');
     })
     .catch(function(err) {
