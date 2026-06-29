@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -455,34 +454,33 @@ function loadAccounts() {
   var btn = document.getElementById('load-accounts-btn');
   btn.disabled = true; btn.textContent = 'Loading…';
 
-  // Query customer_client table on the MCC to get all child accounts
-  var managerId = MANAGER_ID || '';
-  if (!managerId) {
-    // Fall back to listAccessibleCustomers and prompt user to set MANAGER_ID
-    setError('Set MANAGER_ID in the config block, or ensure GOOGLE_MANAGER_ID is set in the Worker.');
-    btn.disabled = false; btn.textContent = 'Load Accounts';
-    return;
-  }
-
-  var query = [
-    'SELECT',
-    '  customer_client.id,',
-    '  customer_client.descriptive_name,',
-    '  customer_client.currency_code,',
-    '  customer_client.time_zone,',
-    '  customer_client.status',
-    'FROM customer_client',
-    'WHERE customer_client.level = 1',
-    '  AND customer_client.status != \'HIDDEN\'',
-    'ORDER BY customer_client.descriptive_name ASC'
-  ].join(' ');
-
-  gadsSearch(managerId, query)
+  gadsGet('/v24/customers:listAccessibleCustomers')
     .then(function(json) {
+      var resourceNames = json.resourceNames || [];
+      if (!resourceNames.length) {
+        btn.disabled = false; btn.textContent = 'Load Accounts';
+        setError('No accessible accounts found.');
+        return;
+      }
+      var ids = resourceNames.map(function(r) { return r.replace('customers/', ''); });
+      return Promise.all(ids.map(function(id) {
+        return gadsSearch(id, 'SELECT customer.id, customer.descriptive_name, customer.currency_code, customer.time_zone, customer.status FROM customer LIMIT 1')
+          .then(function(json) {
+            var row = (json.results || [])[0];
+            return row ? row.customer : { id: id, descriptiveName: 'Account ' + id };
+          })
+          .catch(function() {
+            return { id: id, descriptiveName: 'Account ' + id };
+          });
+      }));
+    })
+    .then(function(accounts) {
       btn.disabled = false; btn.textContent = 'Load Accounts';
-      var rows = json.results || [];
-      if (!rows.length) { setError('No client accounts found under this manager ID.'); return; }
-      populateAccountSelector(rows.map(function(r) { return r.customerClient; }));
+      if (!accounts) return;
+      accounts.sort(function(a, b) {
+        return (a.descriptiveName || '').localeCompare(b.descriptiveName || '');
+      });
+      populateAccountSelector(accounts);
       document.getElementById('account-bar').classList.add('visible');
     })
     .catch(function(err) {
