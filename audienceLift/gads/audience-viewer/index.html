@@ -827,8 +827,6 @@ function renderCriteriaFromList(a) {
     rows.push(['Membership duration',
       a.membershipLifeSpan === 10000 ? 'Unlimited' : a.membershipLifeSpan + ' days']);
   }
-  if (a.sizeRangeForSearch)  rows.push(['Search size range',  a.sizeRangeForSearch.replace(/_/g, ' ')]);
-  if (a.sizeRangeForDisplay) rows.push(['Display size range', a.sizeRangeForDisplay.replace(/_/g, ' ')]);
   if (a.readOnly != null)    rows.push(['Read-only',          a.readOnly ? 'Yes' : 'No']);
 
   if (!rows.length) return '<div class="no-criteria">No criteria data available.</div>';
