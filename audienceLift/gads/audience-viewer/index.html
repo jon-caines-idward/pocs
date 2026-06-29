@@ -1,0 +1,849 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Google Ads Audiences</title>
+  <style>
+    /* ── Anonymised brand tokens ── */
+    :root {
+      --black:      #171717;
+      --white:      #FFFFFC;
+      --teal:       #01F5D4;
+      --teal-tint:  #00BDA4;
+      --surface:    #1e1e1e;
+      --surface-2:  #252525;
+      --surface-3:  #2e2e2e;
+      --border:     #333;
+      --muted:      #888;
+      --danger:     #e74c3c;
+      --google-blue: #4285F4;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Graphik", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px;
+      background: var(--black);
+      color: var(--white);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+    .topbar h1 { font-size: 15px; font-weight: 700; white-space: nowrap; color: var(--teal); letter-spacing: 0.02em; }
+    .topbar input[type="password"] {
+      flex: 1; min-width: 200px; max-width: 340px;
+      padding: 6px 10px; border: 1px solid var(--border); border-radius: 4px;
+      font-size: 13px; background: var(--surface-3); color: var(--white);
+    }
+    .topbar input::placeholder { color: var(--muted); }
+    .topbar input:focus { outline: none; border-color: var(--teal); }
+    .topbar button {
+      padding: 6px 16px; background: var(--teal); color: var(--black);
+      border: none; border-radius: 4px; font-size: 13px; font-weight: 700;
+      cursor: pointer; white-space: nowrap; flex-shrink: 0; letter-spacing: 0.02em;
+    }
+    .topbar button:hover { background: var(--teal-tint); }
+    .topbar button:disabled { opacity: 0.4; cursor: default; }
+    .topbar-error { font-size: 12px; color: var(--danger); width: 100%; padding-bottom: 4px; }
+
+    /* ── Account bar ── */
+    .account-bar {
+      background: var(--surface-2); border-bottom: 1px solid var(--border);
+      padding: 8px 20px; display: none; align-items: center;
+      gap: 12px; flex-shrink: 0; flex-wrap: wrap;
+    }
+    .account-bar.visible { display: flex; }
+    .account-bar label {
+      font-size: 11px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.07em; color: var(--muted); white-space: nowrap;
+    }
+    .account-bar select {
+      flex: 1; max-width: 440px; padding: 5px 9px;
+      border: 1px solid var(--border); border-radius: 4px; font-size: 13px;
+      background: var(--surface-3); color: var(--white); cursor: pointer;
+    }
+    .account-bar select option { background: var(--surface-2); color: var(--white); }
+    .account-bar select:focus { outline: none; border-color: var(--teal); }
+    .account-meta { font-size: 12px; color: var(--muted); white-space: nowrap; }
+
+    /* ── Main layout ── */
+    .main { display: flex; flex: 1; overflow: hidden; }
+
+    /* ── List panel ── */
+    .list-panel {
+      width: 360px; flex-shrink: 0; background: var(--surface);
+      border-right: 1px solid var(--border); display: flex;
+      flex-direction: column; overflow: hidden;
+    }
+    .list-header {
+      padding: 10px 14px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+    }
+    .list-header h2 { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); flex-shrink: 0; }
+    .list-count { font-size: 12px; color: var(--teal); font-weight: 600; flex-shrink: 0; }
+    .sort-controls { display: flex; gap: 4px; margin-left: auto; }
+    .sort-btn {
+      padding: 2px 8px; font-size: 10px; font-weight: 700; letter-spacing: 0.04em;
+      border: 1px solid var(--border); border-radius: 3px; background: transparent;
+      color: var(--muted); cursor: pointer; white-space: nowrap;
+    }
+    .sort-btn.active { border-color: var(--teal); color: var(--teal); }
+    .sort-btn:not(.active):hover { border-color: var(--muted); }
+    .list-search {
+      padding: 8px 12px; border-bottom: 1px solid var(--border);
+      flex-shrink: 0; background: var(--surface-2);
+    }
+    .list-search input {
+      width: 100%; padding: 5px 9px; border: 1px solid var(--border);
+      border-radius: 4px; font-size: 12px; background: var(--surface-3); color: var(--white);
+    }
+    .list-search input::placeholder { color: var(--muted); }
+    .list-search input:focus { outline: none; border-color: var(--teal); }
+    .list-body { flex: 1; overflow-y: auto; }
+    .list-body::-webkit-scrollbar { width: 4px; }
+    .list-body::-webkit-scrollbar-track { background: var(--surface); }
+    .list-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .list-group-header {
+      padding: 6px 14px; font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.1em; color: var(--black);
+      background: var(--teal); border-bottom: 1px solid var(--teal-tint);
+      position: sticky; top: 0; z-index: 1;
+    }
+    .list-group-header.other { background: var(--surface-3); color: var(--muted); border-bottom-color: var(--border); }
+    .audience-item {
+      padding: 10px 14px; border-bottom: 1px solid var(--border);
+      cursor: pointer; transition: background 0.1s; border-left: 3px solid transparent;
+    }
+    .audience-item:hover { background: var(--surface-2); }
+    .audience-item.active { background: var(--surface-2); border-left-color: var(--teal); }
+    .audience-name {
+      font-size: 13px; font-weight: 500; color: var(--white); margin-bottom: 3px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .audience-name-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .audience-meta-row { font-size: 11px; color: var(--muted); display: flex; gap: 8px; flex-wrap: wrap; }
+    .audience-meta-row span { white-space: nowrap; }
+    .status-dot {
+      display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+      margin-right: 3px; vertical-align: middle;
+    }
+    .dot-active   { background: var(--teal); }
+    .dot-inactive { background: var(--danger); }
+    .type-badge {
+      font-size: 9px; font-weight: 700; letter-spacing: 0.06em;
+      padding: 1px 5px; border-radius: 3px; text-transform: uppercase; flex-shrink: 0;
+    }
+    .badge-remarketing { background: rgba(1,245,212,0.12);  color: var(--teal);  border: 1px solid rgba(1,245,212,0.3); }
+    .badge-crm         { background: rgba(253,89,1,0.1);    color: #FD5901;      border: 1px solid rgba(253,89,1,0.3); }
+    .badge-logical     { background: rgba(255,255,252,0.06); color: var(--muted); border: 1px solid var(--border); }
+    .badge-rule        { background: rgba(66,133,244,0.12); color: #4285F4;      border: 1px solid rgba(66,133,244,0.3); }
+    .badge-similar     { background: rgba(255,255,252,0.04); color: var(--muted); border: 1px solid var(--border); }
+    .masked-size { font-size: 10px; font-weight: 700; color: #f59e0b; letter-spacing: 0.03em; }
+
+    /* ── Account-level size banner ── */
+    .account-small-banner {
+      margin: 8px 10px;
+      background: rgba(245,158,11,0.07); border: 1px solid rgba(245,158,11,0.25);
+      border-radius: 5px; padding: 9px 11px; font-size: 11px; color: #d4a017; line-height: 1.5;
+    }
+    .account-small-banner strong { display: block; color: #f59e0b; margin-bottom: 3px; font-size: 11px; }
+
+    .spinner { display: none; padding: 24px; text-align: center; color: var(--teal); font-size: 13px; }
+    .spinner.visible { display: block; }
+    .empty-state { padding: 32px 16px; text-align: center; color: var(--muted); font-size: 13px; }
+
+    /* ── Detail panel ── */
+    .detail-panel { flex: 1; overflow-y: auto; padding: 24px; background: var(--black); }
+    .detail-panel::-webkit-scrollbar { width: 4px; }
+    .detail-panel::-webkit-scrollbar-track { background: var(--black); }
+    .detail-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .detail-placeholder {
+      display: flex; align-items: center; justify-content: center;
+      height: 100%; color: var(--muted); font-size: 14px;
+    }
+    .detail-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; color: var(--white); }
+    .detail-id { font-size: 12px; color: var(--muted); margin-bottom: 16px; }
+    .stat-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+      padding: 10px 16px; font-size: 11px; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .stat-card strong { display: block; font-size: 14px; color: var(--white); margin-bottom: 3px; text-transform: none; letter-spacing: 0; }
+    .section-label {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--muted); margin-bottom: 10px;
+    }
+
+    /* ── Criteria / rule renderer ── */
+    .criteria-section {
+      background: var(--surface); border-radius: 6px; border: 1px solid var(--border);
+      margin-bottom: 14px; overflow: hidden;
+    }
+    .criteria-header {
+      padding: 9px 14px; font-weight: 700; font-size: 11px;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      background: rgba(1,245,212,0.08); color: var(--teal);
+      border-bottom: 1px solid rgba(1,245,212,0.15);
+    }
+    .criteria-body { padding: 12px 14px; }
+    .criteria-row {
+      font-size: 12px; color: #bbb; padding: 5px 0;
+      border-bottom: 1px solid var(--border); display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .criteria-row:last-child { border-bottom: none; }
+    .criteria-key { color: var(--muted); min-width: 120px; flex-shrink: 0; }
+    .criteria-val { color: var(--white); }
+    .criteria-val code {
+      font-family: "SF Mono", "Fira Code", monospace;
+      background: var(--surface-3); color: var(--teal);
+      padding: 1px 6px; border-radius: 3px; font-size: 11px;
+      border: 1px solid var(--border);
+    }
+    .no-criteria {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 6px; padding: 14px; color: var(--muted); font-size: 13px;
+    }
+
+    /* ── Restriction banner ── */
+    .restricted-banner {
+      background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.3);
+      border-radius: 6px; padding: 12px 14px; margin-bottom: 18px;
+      font-size: 12px; color: #f59e0b; line-height: 1.5;
+    }
+    .restricted-banner strong { display: block; margin-bottom: 4px; font-size: 13px; }
+    .restricted-note { font-size: 11px; color: var(--muted); margin-top: 6px; }
+
+    /* ── Combined list members ── */
+    .member-list { margin-top: 8px; }
+    .member-item {
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: 4px; padding: 7px 10px; margin-bottom: 6px;
+      font-size: 12px; color: var(--muted);
+    }
+    .member-item strong { color: var(--white); }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>&#128202; Google Ads Audiences</h1>
+  <input type="password" id="access-token" placeholder="Not required when using proxy" />
+  <button id="load-accounts-btn" onclick="loadAccounts()">Load Accounts</button>
+  <div class="topbar-error" id="api-error"></div>
+</div>
+
+<div class="account-bar" id="account-bar">
+  <label for="account-select">Account</label>
+  <select id="account-select" onchange="onAccountChange()">
+    <option value="">— select an account —</option>
+  </select>
+  <span class="account-meta" id="account-meta"></span>
+</div>
+
+<div class="main">
+  <div class="list-panel">
+    <div class="list-header">
+      <h2>Audiences</h2>
+      <span class="list-count" id="list-count"></span>
+      <div class="sort-controls" id="sort-controls" style="display:none">
+        <button class="sort-btn active" id="sort-name" onclick="setSort('name')">Name ↕</button>
+        <button class="sort-btn"        id="sort-size" onclick="setSort('size')">Size ↕</button>
+      </div>
+    </div>
+    <div class="list-search">
+      <input id="list-filter" type="text" placeholder="Filter by name…" oninput="filterList()" disabled>
+    </div>
+    <div class="spinner" id="list-spinner">Loading…</div>
+    <div class="list-body" id="list-body">
+      <div class="empty-state">Load accounts to get started.</div>
+    </div>
+  </div>
+
+  <div class="detail-panel" id="detail-panel">
+    <div class="detail-placeholder">Select an account, then click an audience.</div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  CONFIG
+// ═══════════════════════════════════════════════════════
+var API        = 'https://gads-proxy.jonathan-1be.workers.dev'; // Cloudflare Worker URL
+var MANAGER_ID = '';  // MCC customer ID — leave blank if set as GOOGLE_MANAGER_ID in Worker
+
+// ═══════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════
+var allAudiences      = [];
+var filteredAudiences = [];
+var sortBy  = 'name';
+var sortDir = 'asc';
+
+var LIST_QUERY = [
+  'SELECT',
+  '  user_list.id,',
+  '  user_list.name,',
+  '  user_list.description,',
+  '  user_list.type,',
+  '  user_list.membership_status,',
+  '  user_list.size_for_search,',
+  '  user_list.size_for_display,',
+  '  user_list.size_range_for_search,',
+  '  user_list.size_range_for_display,',
+  '  user_list.eligible_for_search,',
+  '  user_list.eligible_for_display,',
+  '  user_list.membership_life_span,',
+  '  user_list.date_of_latest_update,',
+  '  user_list.read_only',
+  'FROM user_list',
+  'ORDER BY user_list.name ASC'
+].join(' ');
+
+var DETAIL_QUERY_TPL = [
+  'SELECT',
+  '  user_list.id,',
+  '  user_list.rule_based_user_list,',
+  '  user_list.crm_based_user_list,',
+  '  user_list.logical_user_list,',
+  '  user_list.basic_user_list',
+  'FROM user_list',
+  'WHERE user_list.id = {ID}'
+].join(' ');
+
+var TYPE_LABELS = {
+  REMARKETING:                  'Remarketing',
+  LOGICAL:                      'Combined',
+  RULE_BASED:                   'Rule-based',
+  CRM_BASED:                    'CRM',
+  CUSTOMER_MATCH_USER_LIST:     'Customer Match',
+  CUSTOMER_MATCH_CONTACT_INFO:  'Customer Match',
+  CUSTOMER_MATCH_CRM_ID:        'Customer Match',
+  SIMILAR:                      'Similar (Sunset)',
+  EXTERNAL_REMARKETING:         'App',
+  LIFE_EVENTS:                  'Life Events',
+  INTEREST:                     'Interest',
+  COMBINED_AUDIENCE:            'Combined',
+};
+
+var TYPE_BADGE_CLASS = {
+  REMARKETING:                  'badge-remarketing',
+  RULE_BASED:                   'badge-rule',
+  LOGICAL:                      'badge-logical',
+  COMBINED_AUDIENCE:            'badge-logical',
+  CRM_BASED:                    'badge-crm',
+  CUSTOMER_MATCH_USER_LIST:     'badge-crm',
+  CUSTOMER_MATCH_CONTACT_INFO:  'badge-crm',
+  CUSTOMER_MATCH_CRM_ID:        'badge-crm',
+  SIMILAR:                      'badge-similar',
+  EXTERNAL_REMARKETING:         'badge-rule',
+  LIFE_EVENTS:                  'badge-remarketing',
+  INTEREST:                     'badge-remarketing',
+};
+
+// ═══════════════════════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════════════════════
+function usingProxy() { return API.indexOf('googleads.googleapis.com') === -1; }
+
+function setError(msg) { document.getElementById('api-error').textContent = msg; }
+
+// Google Ads API uses POST + GAQL for all data queries
+function gadsSearch(customerId, query) {
+  return fetch(API + '/v24/customers/' + customerId + '/googleAds:search', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ query: query }),
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(json) {
+    if (json.error) throw new Error(json.error.message || 'API error');
+    return json;
+  });
+}
+
+// Simple GET for non-GAQL endpoints
+function gadsGet(path) {
+  return fetch(API + path)
+    .then(function(r) { return r.json(); })
+    .then(function(json) {
+      if (json.error) throw new Error(json.error.message || 'API error');
+      return json;
+    });
+}
+
+// Returns true when both search and display sizes are masked (Google returns 0)
+function isRestricted(a) {
+  return a.sizeForSearch === 0 && a.sizeForDisplay === 0
+    && (a.sizeForSearch !== undefined) && (a.sizeForDisplay !== undefined);
+}
+
+// Returns true for any sub-1K audience
+function isSmall(a) {
+  var s = a.sizeForSearch || 0;
+  var d = a.sizeForDisplay || 0;
+  return Math.max(s, d) < 1000;
+}
+
+function isNewAudience(a) {
+  if (!a.dateOfLatestUpdate) return false;
+  var d = new Date(a.dateOfLatestUpdate);
+  return (Date.now() - d.getTime()) < 86400000;
+}
+
+var CUT_2025 = new Date('2025-01-01').getTime();
+function buildSizeDiagnostic() {
+  var total = allAudiences.length;
+  if (!total) return null;
+  var smallCount = allAudiences.filter(isSmall).length;
+  if (!smallCount) return null;
+
+  var anonGroup  = allAudiences.filter(isAnon);
+  var otherGroup = allAudiences.filter(function(a) { return !isAnon(a); });
+
+  var oldUnmasked = allAudiences.filter(function(a) {
+    if (isSmall(a)) return false;
+    if (!a.dateOfLatestUpdate) return false;
+    return new Date(a.dateOfLatestUpdate).getTime() < CUT_2025;
+  }).length;
+
+  return {
+    total:      total,
+    smallCount: smallCount,
+    anonTotal:  anonGroup.length,
+    anonSmall:  anonGroup.filter(isSmall).length,
+    otherTotal: otherGroup.length,
+    otherSmall: otherGroup.filter(isSmall).length,
+    oldUnmasked: oldUnmasked,
+  };
+}
+
+function isAnon(a) {
+  return (a.name || '').toLowerCase().indexOf('anon') !== -1;
+}
+
+function formatSize(n) {
+  if (!n || n === 0) return '—';
+  if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (n >= 1000)    return Math.round(n / 1000) + 'K';
+  return String(n);
+}
+
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ═══════════════════════════════════════════════════════
+//  STEP 1 — LOAD ACCOUNTS
+// ═══════════════════════════════════════════════════════
+function loadAccounts() {
+  setError('');
+  var btn = document.getElementById('load-accounts-btn');
+  btn.disabled = true; btn.textContent = 'Loading…';
+
+  // Query customer_client table on the MCC to get all child accounts
+  var managerId = MANAGER_ID || '';
+  if (!managerId) {
+    // Fall back to listAccessibleCustomers and prompt user to set MANAGER_ID
+    setError('Set MANAGER_ID in the config block, or ensure GOOGLE_MANAGER_ID is set in the Worker.');
+    btn.disabled = false; btn.textContent = 'Load Accounts';
+    return;
+  }
+
+  var query = [
+    'SELECT',
+    '  customer_client.id,',
+    '  customer_client.descriptive_name,',
+    '  customer_client.currency_code,',
+    '  customer_client.time_zone,',
+    '  customer_client.status',
+    'FROM customer_client',
+    'WHERE customer_client.level = 1',
+    '  AND customer_client.status != \'HIDDEN\'',
+    'ORDER BY customer_client.descriptive_name ASC'
+  ].join(' ');
+
+  gadsSearch(managerId, query)
+    .then(function(json) {
+      btn.disabled = false; btn.textContent = 'Load Accounts';
+      var rows = json.results || [];
+      if (!rows.length) { setError('No client accounts found under this manager ID.'); return; }
+      populateAccountSelector(rows.map(function(r) { return r.customerClient; }));
+      document.getElementById('account-bar').classList.add('visible');
+    })
+    .catch(function(err) {
+      btn.disabled = false; btn.textContent = 'Load Accounts';
+      setError('Error loading accounts: ' + err.message);
+    });
+}
+
+function populateAccountSelector(accounts) {
+  var sel = document.getElementById('account-select');
+  sel.innerHTML = '<option value="">— select an account —</option>';
+  accounts.forEach(function(a) {
+    var opt = document.createElement('option');
+    opt.value = a.id;
+    opt.textContent = escHtml(a.descriptiveName || 'Account ' + a.id) + ' (' + a.id + ')';
+    opt.dataset.currency = a.currencyCode || '';
+    opt.dataset.timezone = a.timeZone     || '';
+    opt.dataset.status   = a.status       || '';
+    sel.appendChild(opt);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  STEP 2 — SELECT ACCOUNT → LOAD AUDIENCES
+// ═══════════════════════════════════════════════════════
+function onAccountChange() {
+  var sel = document.getElementById('account-select');
+  var id  = sel.value;
+  if (!id) return;
+
+  var opt      = sel.options[sel.selectedIndex];
+  var metaParts = [opt.dataset.currency, opt.dataset.timezone, opt.dataset.status].filter(Boolean);
+  document.getElementById('account-meta').textContent = metaParts.join('  ·  ');
+
+  document.getElementById('detail-panel').innerHTML =
+    '<div class="detail-placeholder">Click an audience to view its details.</div>';
+
+  fetchAudiences(id);
+}
+
+function fetchAudiences(customerId) {
+  var spinner  = document.getElementById('list-spinner');
+  var listBody = document.getElementById('list-body');
+  setError('');
+  spinner.classList.add('visible');
+  listBody.innerHTML = '';
+  document.getElementById('list-count').textContent = '';
+  document.getElementById('list-filter').disabled = true;
+  document.getElementById('sort-controls').style.display = 'none';
+
+  gadsSearch(customerId, LIST_QUERY)
+    .then(function(json) {
+      spinner.classList.remove('visible');
+      allAudiences      = (json.results || []).map(function(r) { return r.userList; });
+      filteredAudiences = allAudiences.slice();
+      document.getElementById('list-filter').disabled = false;
+      renderList(filteredAudiences);
+    })
+    .catch(function(err) {
+      spinner.classList.remove('visible');
+      setError('Error loading audiences: ' + err.message);
+      listBody.innerHTML = '<div class="empty-state">Could not load audiences.</div>';
+    });
+}
+
+// ═══════════════════════════════════════════════════════
+//  LIST
+// ═══════════════════════════════════════════════════════
+function audienceItemHtml(a, i) {
+  var isActive    = a.membershipStatus === 'OPEN';
+  var dotClass    = isActive ? 'dot-active' : 'dot-inactive';
+  var statusLabel = isActive ? 'Active' : (a.membershipStatus || 'Unknown');
+  var restricted  = isRestricted(a);
+
+  var searchSize = restricted
+    ? '<span class="masked-size">⚠ Masked</span>'
+    : (a.sizeForSearch ? '&#128269; ' + formatSize(a.sizeForSearch) : '');
+  var displaySize = !restricted && a.sizeForDisplay
+    ? '&#128444; ' + formatSize(a.sizeForDisplay) : '';
+
+  var typeKey   = a.type || '';
+  var typeLabel = TYPE_LABELS[typeKey] || typeKey;
+  var badgeCls  = TYPE_BADGE_CLASS[typeKey] || 'badge-logical';
+  var typeBadge = '<span class="type-badge ' + badgeCls + '">' + escHtml(typeLabel) + '</span>';
+
+  var updated = a.dateOfLatestUpdate
+    ? new Date(a.dateOfLatestUpdate).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })
+    : '';
+
+  return '<div class="audience-item" data-index="' + i + '" onclick="selectAudience(' + i + ')">'
+    + '<div class="audience-name">'
+    +   '<span class="audience-name-text">' + escHtml(a.name) + '</span>'
+    +   typeBadge
+    + '</div>'
+    + '<div class="audience-meta-row">'
+    + '<span><span class="status-dot ' + dotClass + '"></span>' + escHtml(statusLabel) + '</span>'
+    + (searchSize  ? '<span>' + searchSize  + '</span>' : '')
+    + (displaySize ? '<span>' + displaySize + '</span>' : '')
+    + (updated     ? '<span>&#128197; ' + updated + '</span>' : '')
+    + '</div></div>';
+}
+
+function sortGroup(group) {
+  return group.slice().sort(function(x, y) {
+    var a = x.a, b = y.a;
+    var val;
+    if (sortBy === 'size') {
+      val = (a.sizeForSearch || 0) - (b.sizeForSearch || 0);
+    } else {
+      val = (a.name || '').toLowerCase() < (b.name || '').toLowerCase() ? -1
+          : (a.name || '').toLowerCase() > (b.name || '').toLowerCase() ? 1 : 0;
+    }
+    return sortDir === 'asc' ? val : -val;
+  });
+}
+
+function setSort(by) {
+  if (sortBy === by) { sortDir = sortDir === 'asc' ? 'desc' : 'asc'; }
+  else { sortBy = by; sortDir = by === 'size' ? 'desc' : 'asc'; }
+  var arrow = sortDir === 'asc' ? ' ↑' : ' ↓';
+  document.getElementById('sort-name').textContent = 'Name'   + (sortBy === 'name' ? arrow : ' ↕');
+  document.getElementById('sort-size').textContent = 'Size'   + (sortBy === 'size' ? arrow : ' ↕');
+  document.getElementById('sort-name').classList.toggle('active', sortBy === 'name');
+  document.getElementById('sort-size').classList.toggle('active', sortBy === 'size');
+  renderList(filteredAudiences);
+}
+
+function renderList(audiences) {
+  var listBody = document.getElementById('list-body');
+  document.getElementById('list-count').textContent =
+    audiences.length + ' audience' + (audiences.length !== 1 ? 's' : '');
+  document.getElementById('sort-controls').style.display = audiences.length ? 'flex' : 'none';
+
+  if (!audiences.length) {
+    listBody.innerHTML = '<div class="empty-state">No audiences found.</div>';
+    return;
+  }
+
+  var anonGroup  = [];
+  var otherGroup = [];
+  audiences.forEach(function(a, i) {
+    if (isAnon(a)) anonGroup.push({ a: a, i: i });
+    else           otherGroup.push({ a: a, i: i });
+  });
+  anonGroup  = sortGroup(anonGroup);
+  otherGroup = sortGroup(otherGroup);
+
+  var html = '';
+
+  // Proportional size observation
+  var diag = buildSizeDiagnostic();
+  if (diag) {
+    var msg = diag.smallCount + ' of ' + diag.total + ' audience'
+      + (diag.total !== 1 ? 's' : '') + ' show sub-1,000 sizes.';
+    if (diag.anonTotal > 0 && diag.otherTotal > 0) {
+      msg += ' ' + diag.anonSmall + '/' + diag.anonTotal + ' Anonymised'
+        + ' and ' + diag.otherSmall + '/' + diag.otherTotal + ' other audiences are affected.';
+    }
+    if (diag.oldUnmasked > 0) {
+      msg += ' ' + diag.oldUnmasked + ' audience' + (diag.oldUnmasked !== 1 ? 's' : '')
+        + ' with visible sizes appear to predate 2025.';
+    }
+    msg += ' Possible explanations: account-level policy, recently created audiences still populating, or configuration issues.';
+    html += '<div class="account-small-banner"><strong>⚠ Audience size observations</strong>' + msg + '</div>';
+  }
+
+  if (anonGroup.length) {
+    html += '<div class="list-group-header">Anonymised (' + anonGroup.length + ')</div>';
+    html += anonGroup.map(function(x) { return audienceItemHtml(x.a, x.i); }).join('');
+  }
+  if (otherGroup.length) {
+    html += '<div class="list-group-header other">Other (' + otherGroup.length + ')</div>';
+    html += otherGroup.map(function(x) { return audienceItemHtml(x.a, x.i); }).join('');
+  }
+
+  listBody.innerHTML = html;
+}
+
+function filterList() {
+  var q = document.getElementById('list-filter').value.toLowerCase();
+  filteredAudiences = allAudiences.filter(function(a) {
+    return (a.name || '').toLowerCase().indexOf(q) !== -1;
+  });
+  renderList(filteredAudiences);
+}
+
+// ═══════════════════════════════════════════════════════
+//  SELECT AUDIENCE
+// ═══════════════════════════════════════════════════════
+function selectAudience(index) {
+  document.querySelectorAll('.audience-item').forEach(function(el) { el.classList.remove('active'); });
+  var el = document.querySelector('[data-index="' + index + '"]');
+  if (el) el.classList.add('active');
+
+  var a = filteredAudiences[index];
+  renderDetail(a);
+
+  // Lazy-load criteria
+  var customerId = document.getElementById('account-select').value;
+  var query = DETAIL_QUERY_TPL.replace('{ID}', a.id);
+  document.getElementById('detail-criteria-area').innerHTML =
+    '<div class="no-criteria" style="color:#888">Loading criteria…</div>';
+
+  gadsSearch(customerId, query)
+    .then(function(json) {
+      var row = (json.results || [])[0];
+      document.getElementById('detail-criteria-area').innerHTML =
+        row ? renderCriteria(a.type, row.userList) : '<div class="no-criteria">No criteria data returned.</div>';
+    })
+    .catch(function(err) {
+      document.getElementById('detail-criteria-area').innerHTML =
+        '<div class="no-criteria">Could not load criteria: ' + escHtml(err.message) + '</div>';
+    });
+}
+
+// ═══════════════════════════════════════════════════════
+//  DETAIL PANEL
+// ═══════════════════════════════════════════════════════
+function renderDetail(a) {
+  var restricted  = isRestricted(a);
+  var smallNotRes = isSmall(a) && !restricted;
+  var isNew       = isNewAudience(a);
+
+  var searchVal  = restricted ? '<span style="color:#f59e0b">Masked</span>' : escHtml(formatSize(a.sizeForSearch));
+  var displayVal = restricted ? '<span style="color:#f59e0b">Masked</span>' : escHtml(formatSize(a.sizeForDisplay));
+
+  var typeKey   = a.type || '';
+  var typeLabel = TYPE_LABELS[typeKey] || typeKey;
+  var badgeCls  = TYPE_BADGE_CLASS[typeKey] || 'badge-logical';
+
+  var html = '<div class="detail-title">' + escHtml(a.name) + '</div>'
+    + '<div class="detail-id">'
+    + 'ID: ' + escHtml(String(a.id))
+    + '&nbsp;·&nbsp;<span class="type-badge ' + badgeCls + '" style="font-size:11px;padding:2px 7px">' + escHtml(typeLabel) + '</span>'
+    + '</div>';
+
+  html += '<div class="stat-row">'
+    + statCard('Search size',  searchVal)
+    + statCard('Display size', displayVal)
+    + statCard('Retention',    a.membershipLifeSpan ? a.membershipLifeSpan + ' days' : '—')
+    + statCard('Status',       a.membershipStatus === 'OPEN'
+        ? '<span style="color:var(--teal)">Open</span>'
+        : '<span style="color:var(--danger)">' + escHtml(a.membershipStatus || '—') + '</span>')
+    + statCard('Search eligible',  a.eligibleForSearch  ? '<span style="color:var(--teal)">Yes</span>' : 'No')
+    + statCard('Display eligible', a.eligibleForDisplay ? '<span style="color:var(--teal)">Yes</span>' : 'No')
+    + statCard('Updated', a.dateOfLatestUpdate || '—')
+    + '</div>';
+
+  // Restriction / size warnings
+  if (restricted) {
+    html += '<div class="restricted-banner">'
+      + '<strong>⚠ Audience sizes masked by Google</strong>'
+      + 'Google returns 0 for both Search and Display sizes when an audience falls below the reportable threshold or is subject to a policy restriction. Possible causes: audience too small to report, recently created, or an account-level policy (equivalent to Meta\'s Special Ad Categories or Sensitive Data Restrictions).'
+      + '<div class="restricted-note">Delivery may still occur to the eligible pool. Use conversion tracking and audience insights reports rather than audience size to evaluate performance.</div>'
+      + '</div>';
+  } else if (smallNotRes) {
+    var d = buildSizeDiagnostic();
+    var accountNote = d ? d.smallCount + ' of ' + d.total + ' audiences in this account are also sub-1,000. ' : '';
+    html += '<div class="restricted-banner">'
+      + '<strong>⚠ Audience size below 1,000</strong>'
+      + (isNew ? 'This audience was recently updated and may still be populating. ' : '')
+      + accountNote
+      + 'Possible explanations: audience still building after recent creation or update, criteria too narrow, or an account-level policy restriction.'
+      + '<div class="restricted-note">Google suppresses size reporting below 1,000 members.</div>'
+      + '</div>';
+  }
+
+  html += '<div class="section-label">Audience Criteria</div>';
+  html += '<div id="detail-criteria-area"></div>';
+
+  document.getElementById('detail-panel').innerHTML = html;
+}
+
+function statCard(label, value) {
+  return '<div class="stat-card"><strong>' + value + '</strong>' + escHtml(label) + '</div>';
+}
+
+// ═══════════════════════════════════════════════════════
+//  CRITERIA RENDERER
+// ═══════════════════════════════════════════════════════
+function renderCriteria(type, ul) {
+  if (!ul) return '<div class="no-criteria">No criteria available for this audience type.</div>';
+
+  // Remarketing / Rule-based
+  if (ul.ruleBasedUserList) {
+    var rules = ul.ruleBasedUserList;
+    var rows = [];
+    if (rules.prepopulationStatus) rows.push(['Prepopulation status', rules.prepopulationStatus]);
+    var expr = rules.expressionRuleUserList || rules.dateSpecificRuleUserList || rules.combinedRuleUserList;
+    if (expr) {
+      rows.push(['Rule type', type]);
+      rows.push(['Rule data', JSON.stringify(expr, null, 2)]);
+    }
+    return renderCriteriaTable('Rule-based Criteria', rows);
+  }
+
+  // CRM / Customer Match
+  if (ul.crmBasedUserList) {
+    var crm = ul.crmBasedUserList;
+    var rows = [];
+    if (crm.uploadKeyType)   rows.push(['Upload key type',   crm.uploadKeyType]);
+    if (crm.dataSourceType)  rows.push(['Data source type',  crm.dataSourceType]);
+    if (crm.appId)           rows.push(['App ID',            crm.appId]);
+    return renderCriteriaTable('CRM / Customer Match', rows);
+  }
+
+  // Logical / Combined
+  if (ul.logicalUserList) {
+    var logical = ul.logicalUserList;
+    var html = '<div class="criteria-section"><div class="criteria-header">Combined List Rules</div><div class="criteria-body">';
+    (logical.rules || []).forEach(function(rule) {
+      html += '<div style="margin-bottom:10px">';
+      html += '<div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:5px">'
+        + escHtml(rule.operator || 'AND') + '</div>';
+      html += '<div class="member-list">';
+      (rule.ruleOperands || []).forEach(function(op) {
+        html += '<div class="member-item"><strong>' + escHtml(op.userList || op) + '</strong></div>';
+      });
+      html += '</div></div>';
+    });
+    html += '</div></div>';
+    return html;
+  }
+
+  // Basic / Engagement
+  if (ul.basicUserList) {
+    var basic = ul.basicUserList;
+    var rows = [];
+    (basic.actions || []).forEach(function(action, i) {
+      rows.push(['Action ' + (i + 1), JSON.stringify(action)]);
+    });
+    return renderCriteriaTable('Engagement Criteria', rows);
+  }
+
+  return '<div class="no-criteria">Criteria structure not available for type: ' + escHtml(type) + '</div>';
+}
+
+function renderCriteriaTable(title, rows) {
+  if (!rows.length) return '<div class="no-criteria">No detailed criteria available.</div>';
+  var html = '<div class="criteria-section"><div class="criteria-header">' + escHtml(title) + '</div><div class="criteria-body">';
+  rows.forEach(function(r) {
+    var val = r[0] === 'Rule data'
+      ? '<pre style="font-size:11px;white-space:pre-wrap;overflow:auto;color:var(--teal)">' + escHtml(r[1]) + '</pre>'
+      : '<span class="criteria-val">' + escHtml(String(r[1])) + '</span>';
+    html += '<div class="criteria-row"><span class="criteria-key">' + escHtml(r[0]) + '</span>' + val + '</div>';
+  });
+  html += '</div></div>';
+  return html;
+}
+
+// ═══════════════════════════════════════════════════════
+//  BOOT
+// ═══════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', function() {
+  var usingProxy = !API.includes('googleads.googleapis.com');
+  if (usingProxy) {
+    document.getElementById('access-token').style.display      = 'none';
+    document.getElementById('load-accounts-btn').style.display = 'none';
+    loadAccounts();
+  }
+});
+</script>
+</body>
+</html>
